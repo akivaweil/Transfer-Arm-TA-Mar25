@@ -1,9 +1,10 @@
 digraph G {
     // Graph settings
-    rankdir=LR;  // Left to Right direction
+    rankdir=LR;  // Left to Right direction for overall flow
     size="40,20";  // Much larger dimensions
     dpi=400;  // Higher DPI
     ratio=fill;
+    concentrate=true;
     node [shape=box, style="rounded,filled", fontname="Arial", fontsize=14, margin=0.4]; // Larger font and margin
     edge [fontname="Arial", fontsize=12, penwidth=2.0]; // Thicker edges, larger font
     splines=true;
@@ -27,35 +28,10 @@ digraph G {
     // Start node (outside of locations)
     start [label="1. WAIT FOR SIGNAL\n• System ready and waiting\n• Monitoring for trigger input\n• Cycle begins with signal", fillcolor="gold1"];
 
-    // Define nodes first (outside of clusters)
-    move_to_pickup [label="2. MOVE TO PICKUP LOCATION ◼\n• Position arm at pickup location\n• Prepare for pickup sequence", fillcolor="skyblue"];
-    
-    lower_for_pickup [label="3. LOWER ARM\n• Begin lowering to pickup height\n• Prepare vacuum system", fillcolor="skyblue"];
-    
-    activate_vacuum [label="4. START SUCTION\n• Activate vacuum\n• Begin gripping object", fillcolor="lightgreen"];
-    
-    continue_lower [label="5. LOWER COMPLETELY\n• Lower to final pickup position\n• Make contact with object", fillcolor="skyblue"];
-    
-    wait_pickup [label="6. HOLD BRIEFLY\n• Pause for 300ms\n• Ensure secure grip", fillcolor="lightgreen"];
-    
-    raise_with_object [label="7. RAISE OBJECT\n• Lift object from surface\n• Prepare for transport", fillcolor="skyblue"];
-    
-    move_to_dropoff [label="8. TRANSFER TO DROPOFF ◼\n• Move to dropoff location\n• Rotate gripper at midpoint", fillcolor="skyblue"];
-    
-    lower_for_dropoff [label="9. LOWER AT DROPOFF\n• Lower to release position\n• Prepare to release object", fillcolor="skyblue"];
-    
-    release_object [label="10. RELEASE OBJECT\n• Turn off suction\n• Drop object at destination", fillcolor="lightgreen"];
-    
-    wait_after_release [label="11. HOLD BRIEFLY\n• Pause for 100ms\n• Ensure clean release", fillcolor="lightgreen"];
-    
-    raise_after_dropoff [label="12. RAISE ARM\n• Lift empty gripper\n• Clear the dropoff area", fillcolor="skyblue"];
-    
-    signal_stage2 [label="13. SIGNAL NEXT MACHINE\n• Send signal to Stage 2\n• Indicate completion", fillcolor="lightgreen"];
-    
-    return_to_pickup [label="14. RETURN TO START ◼\n• Move back to pickup location\n• Reset for next cycle", fillcolor="skyblue"];
-
-    // Pickup Location Cluster (Left Side)
+    // Define the subgraphs with proper layout
+    // Pickup location subgraph (uses TB direction internally)
     subgraph cluster_pickup {
+        rankdir=TB; // Enforce top to bottom within this cluster
         label = "PICKUP LOCATION (LEFT)";
         fontsize=16;
         fontname="Arial Bold";
@@ -64,16 +40,25 @@ digraph G {
         bgcolor="aliceblue";
         penwidth=2.0;
         
-        // Just include the nodes in this cluster for visual grouping
-        lower_for_pickup;
-        activate_vacuum;
-        continue_lower;
-        wait_pickup;
-        raise_with_object;
+        move_to_pickup [label="2. MOVE TO PICKUP LOCATION ◼\n• Position arm at pickup location\n• Prepare for pickup sequence", fillcolor="skyblue"];
+        
+        lower_for_pickup [label="3. LOWER ARM\n• Begin lowering to pickup height\n• Prepare vacuum system", fillcolor="skyblue"];
+        
+        activate_vacuum [label="4. START SUCTION\n• Activate vacuum\n• Begin gripping object", fillcolor="lightgreen"];
+        
+        continue_lower [label="5. LOWER COMPLETELY\n• Lower to final pickup position\n• Make contact with object", fillcolor="skyblue"];
+        
+        wait_pickup [label="6. HOLD BRIEFLY\n• Pause for 300ms\n• Ensure secure grip", fillcolor="lightgreen"];
+        
+        raise_with_object [label="7. RAISE OBJECT\n• Lift object from surface\n• Prepare for transport", fillcolor="skyblue"];
     }
     
-    // Dropoff Location Cluster (Right Side)
+    // Movement node between locations
+    move_to_dropoff [label="8. TRANSFER TO DROPOFF ◼\n• Move to dropoff location\n• Rotate gripper at midpoint", fillcolor="skyblue"];
+    
+    // Dropoff location subgraph (uses TB direction internally)
     subgraph cluster_dropoff {
+        rankdir=TB; // Enforce top to bottom within this cluster
         label = "DROPOFF LOCATION (RIGHT)";
         fontsize=16;
         fontname="Arial Bold";
@@ -82,18 +67,19 @@ digraph G {
         bgcolor="honeydew";
         penwidth=2.0;
         
-        // Just include the nodes in this cluster for visual grouping
-        release_object;
-        wait_after_release;
-        raise_after_dropoff;
-        signal_stage2;
+        lower_for_dropoff [label="9. LOWER AT DROPOFF\n• Lower to release position\n• Prepare to release object", fillcolor="skyblue"];
+        
+        release_object [label="10. RELEASE OBJECT\n• Turn off suction\n• Drop object at destination", fillcolor="lightgreen"];
+        
+        wait_after_release [label="11. HOLD BRIEFLY\n• Pause for 100ms\n• Ensure clean release", fillcolor="lightgreen"];
+        
+        raise_after_dropoff [label="12. RAISE ARM\n• Lift empty gripper\n• Clear the dropoff area", fillcolor="skyblue"];
+        
+        signal_stage2 [label="13. SIGNAL NEXT MACHINE\n• Send signal to Stage 2\n• Indicate completion", fillcolor="lightgreen"];
     }
     
-    // Explicitly set ranks to enforce left-to-right positioning
-    { rank=same; start; }
-    { rank=min; start; move_to_pickup; }
-    { rank=same; move_to_dropoff; lower_for_dropoff; }
-    { rank=same; return_to_pickup; }
+    // Return node outside of clusters
+    return_to_pickup [label="14. RETURN TO START ◼\n• Move back to pickup location\n• Reset for next cycle", fillcolor="skyblue"];
     
     // Edge connections with larger font labels
     start -> move_to_pickup [label="Signal received", fontsize=12];
