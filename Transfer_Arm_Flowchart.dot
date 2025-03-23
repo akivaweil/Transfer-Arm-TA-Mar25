@@ -20,13 +20,15 @@ digraph G {
         main [label="Main Operation", fillcolor="gold1", penwidth=1];
         position [label="Position Movement", fillcolor="skyblue", penwidth=1];
         action [label="Action Step", fillcolor="lightgreen", penwidth=1];
+        servo [label="Servo Action", shape="box", style="filled", fillcolor="skyblue", penwidth=1];
+        servo_icon [label="◼", shape="square", style="filled", fillcolor="pink", width=0.2, height=0.2, fixedsize=true];
     }
     
     // Start node
     start [label="1. WAIT FOR SIGNAL\n• System ready and waiting\n• Monitoring for trigger input\n• Cycle begins with signal", fillcolor="gold1"];
     
     // Process nodes with clearer labels and color coding
-    move_to_pickup [label="2. MOVE TO PICKUP LOCATION\n• Position arm at pickup location\n• Prepare for pickup sequence", fillcolor="skyblue"];
+    move_to_pickup [label="2. MOVE TO PICKUP LOCATION ◼\n• Position arm at pickup location\n• Prepare for pickup sequence", fillcolor="skyblue"];
     
     lower_for_pickup [label="3. LOWER ARM\n• Begin lowering to pickup height\n• Prepare vacuum system", fillcolor="skyblue"];
     
@@ -38,7 +40,7 @@ digraph G {
     
     raise_with_object [label="7. RAISE OBJECT\n• Lift object from surface\n• Prepare for transport", fillcolor="skyblue"];
     
-    move_to_dropoff [label="8. TRANSFER TO DROPOFF\n• Move to dropoff location\n• Rotate gripper at midpoint", fillcolor="skyblue"];
+    move_to_dropoff [label="8. TRANSFER TO DROPOFF ◼\n• Move to dropoff location\n• Rotate gripper at midpoint", fillcolor="skyblue"];
     
     lower_for_dropoff [label="9. LOWER AT DROPOFF\n• Lower to release position\n• Prepare to release object", fillcolor="skyblue"];
     
@@ -50,7 +52,7 @@ digraph G {
     
     signal_stage2 [label="13. SIGNAL NEXT MACHINE\n• Send signal to Stage 2\n• Indicate completion", fillcolor="lightgreen"];
     
-    return_to_pickup [label="14. RETURN TO START\n• Move back to pickup location\n• Reset for next cycle", fillcolor="skyblue"];
+    return_to_pickup [label="14. RETURN TO START ◼\n• Move back to pickup location\n• Reset for next cycle", fillcolor="skyblue"];
     
     // Edge connections with larger font labels
     start -> move_to_pickup [label="Signal received", fontsize=11];
