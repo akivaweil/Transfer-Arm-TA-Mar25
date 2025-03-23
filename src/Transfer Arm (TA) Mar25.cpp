@@ -1,18 +1,39 @@
 #include <Arduino.h>
+#include <AccelStepper.h>
+#include <Bounce2.h>
 
-// put function declarations here:
-int myFunction(int, int);
+// Pin Definitions
+// Inputs
+const int LIMIT_SWITCH_PIN = 34;     // Limit switch input (active high)
+const int STAGE1_SIGNAL_PIN = 35;    // Stage 1 machine signal input
 
+// Setup function - runs once at startup
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+  // Initialize serial communication
+  Serial.begin(115200);
+  
+  // Configure input pins
+  pinMode(LIMIT_SWITCH_PIN, INPUT);
+  pinMode(STAGE1_SIGNAL_PIN, INPUT);
+  
+  Serial.println("Transfer Arm Initialized");
 }
 
+// Main loop function - runs repeatedly
 void loop() {
-  // put your main code here, to run repeatedly:
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+  // Check for pick cycle trigger
+  if (digitalRead(LIMIT_SWITCH_PIN) == HIGH || digitalRead(STAGE1_SIGNAL_PIN) == HIGH) {
+    Serial.println("Pick Cycle Triggered");
+    
+    // Execute pick cycle sequence
+    // TO BE IMPLEMENTED
+    
+    // Return to home position
+    // TO BE IMPLEMENTED
+    
+    Serial.println("Pick Cycle Completed");
+    
+    // Small delay to prevent immediate re-triggering
+    delay(500);
+  }
 }
