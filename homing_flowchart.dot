@@ -26,44 +26,15 @@ digraph "Transfer_Arm_Homing_Flow" {
     }
 
     // Nodes
-    start_homing [label="1. Begin Homing Sequence\n• Power on system\n• Initialize motors", fillcolor=lightyellow];
-    
-    move_x_to_home [label="2. Move X-Axis Toward Home\n• Set slow speed\n• Move in negative direction", fillcolor=lightyellow];
-    
-    check_x_home [label="3. Check X Home Switch\n• Monitor for active HIGH signal", shape=diamond, fillcolor=lightcyan];
-    
-    stop_x [label="4. Stop X Motor\n• Halt movement\n• Zero position counter", fillcolor=lightyellow];
-    
-    move_z_to_home [label="5. Move Z-Axis Toward Home\n• Set slow speed\n• Move in negative direction", fillcolor=lightyellow];
-    
-    check_z_home [label="6. Check Z Home Switch\n• Monitor for active HIGH signal", shape=diamond, fillcolor=lightcyan];
-    
-    stop_z [label="7. Stop Z Motor\n• Halt movement\n• Zero position counter", fillcolor=lightyellow];
-    
-    move_servo_home [label="8. Set Servo to Home Position\n• Move to 90 degrees (neutral)", fillcolor=lightyellow];
-    
-    check_timeout [label="9. Check for Timeout\n• Verify homing completed\n• within time limit", shape=diamond, fillcolor=lightcyan];
-    
-    homing_error [label="10. Homing Error\n• Signal failure\n• Require manual reset", fillcolor=lightpink];
-    
-    homing_complete [label="11. Homing Complete\n• All axes at home position\n• System ready for operation", fillcolor=lightyellow];
+    start_homing [label="1. Begin Homing", fillcolor=lightyellow];
+    home_x [label="2. Home X-Axis", fillcolor=lightyellow];
+    home_z [label="3. Home Z-Axis", fillcolor=lightyellow];
+    home_servo [label="4. Home Servo", fillcolor=lightyellow];
+    homing_complete [label="5. Homing Complete", fillcolor=lightyellow];
     
     // Edges
-    start_homing -> move_x_to_home;
-    move_x_to_home -> check_x_home;
-    
-    check_x_home -> check_x_home [label="Not Reached", constraint=false];
-    check_x_home -> stop_x [label="Reached (HIGH)"];
-    
-    stop_x -> move_z_to_home;
-    move_z_to_home -> check_z_home;
-    
-    check_z_home -> check_z_home [label="Not Reached", constraint=false];
-    check_z_home -> stop_z [label="Reached (HIGH)"];
-    
-    stop_z -> move_servo_home;
-    move_servo_home -> check_timeout;
-    
-    check_timeout -> homing_error [label="Timeout"];
-    check_timeout -> homing_complete [label="Success"];
+    start_homing -> home_x;
+    home_x -> home_z;
+    home_z -> home_servo;
+    home_servo -> homing_complete;
 } 

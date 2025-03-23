@@ -26,32 +26,14 @@ digraph "Transfer_Arm_Flow" {
     }
 
     // Nodes
-    start [label="1. Initialization\n• Power on system\n• Home X-axis (left/right)\n• Home Z-axis (up/down)\n• Set servo to home position", fillcolor=lightyellow];
-    
-    wait_pickup [label="2. Wait for Pick Cycle Signal\n• From limit switch or Stage 1", fillcolor=lightyellow];
-    
-    position_pickup [label="3. Pick Position\n• Move X-axis to pickup position\n• Move Z-axis down\n• Rotate servo to pickup angle", fillcolor=lightyellow];
-    
-    activate_vacuum [label="4. Activate Vacuum\n• Turn on solenoid relay\n• Create venturi suction\n• Grab wood diamond", fillcolor=lightyellow];
-    
-    lift_object [label="5. Lift Object\n• Move Z-axis up with part", fillcolor=lightyellow];
-    
-    move_to_place [label="6. Move to Place Position\n• Move X-axis to destination\n• Rotate servo to place angle", fillcolor=lightyellow];
-    
-    lower_object [label="7. Lower Object\n• Move Z-axis down to target", fillcolor=lightyellow];
-    
-    release_object [label="8. Release Object\n• Turn off solenoid relay\n• Release venturi suction", fillcolor=lightyellow];
-    
-    return_home [label="9. Return to Home\n• Move Z-axis up\n• Move X-axis to home\n• Rotate servo to home", fillcolor=lightyellow];
+    start [label="1. Initialization", fillcolor=lightyellow];
+    wait_pickup [label="2. Wait for Pick Cycle Signal", fillcolor=lightyellow];
+    pick_cycle [label="3. Pick Cycle", fillcolor=lightyellow];
+    return_home [label="4. Return to Home", fillcolor=lightyellow];
     
     // Edges
     start -> wait_pickup;
-    wait_pickup -> position_pickup;
-    position_pickup -> activate_vacuum;
-    activate_vacuum -> lift_object;
-    lift_object -> move_to_place;
-    move_to_place -> lower_object;
-    lower_object -> release_object;
-    release_object -> return_home;
+    wait_pickup -> pick_cycle;
+    pick_cycle -> return_home;
     return_home -> wait_pickup [label="Next Cycle"];
 } 
