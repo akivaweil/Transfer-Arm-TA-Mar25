@@ -24,34 +24,57 @@ digraph G {
         servo_icon [label="", shape="square", style="filled", fillcolor="pink", width=0.2, height=0.2, fixedsize=true];
     }
     
-    // Start node
+    // Start node (outside of locations)
     start [label="1. WAIT FOR SIGNAL\n• System ready and waiting\n• Monitoring for trigger input\n• Cycle begins with signal", fillcolor="gold1"];
+
+    // Pickup Location Cluster
+    subgraph cluster_pickup {
+        label = "PICKUP LOCATION";
+        fontsize=14;
+        fontname="Arial Bold";
+        style="rounded,dashed";
+        color="darkblue";
+        bgcolor="aliceblue";
+        
+        // Process nodes for pickup location
+        move_to_pickup [label="2. MOVE TO PICKUP LOCATION ◼\n• Position arm at pickup location\n• Prepare for pickup sequence", fillcolor="skyblue"];
+        
+        lower_for_pickup [label="3. LOWER ARM\n• Begin lowering to pickup height\n• Prepare vacuum system", fillcolor="skyblue"];
+        
+        activate_vacuum [label="4. START SUCTION\n• Activate vacuum\n• Begin gripping object", fillcolor="lightgreen"];
+        
+        continue_lower [label="5. LOWER COMPLETELY\n• Lower to final pickup position\n• Make contact with object", fillcolor="skyblue"];
+        
+        wait_pickup [label="6. HOLD BRIEFLY\n• Pause for 300ms\n• Ensure secure grip", fillcolor="lightgreen"];
+        
+        raise_with_object [label="7. RAISE OBJECT\n• Lift object from surface\n• Prepare for transport", fillcolor="skyblue"];
+    }
     
-    // Process nodes with clearer labels and color coding
-    move_to_pickup [label="2. MOVE TO PICKUP LOCATION ◼\n• Position arm at pickup location\n• Prepare for pickup sequence", fillcolor="skyblue"];
-    
-    lower_for_pickup [label="3. LOWER ARM\n• Begin lowering to pickup height\n• Prepare vacuum system", fillcolor="skyblue"];
-    
-    activate_vacuum [label="4. START SUCTION\n• Activate vacuum\n• Begin gripping object", fillcolor="lightgreen"];
-    
-    continue_lower [label="5. LOWER COMPLETELY\n• Lower to final pickup position\n• Make contact with object", fillcolor="skyblue"];
-    
-    wait_pickup [label="6. HOLD BRIEFLY\n• Pause for 300ms\n• Ensure secure grip", fillcolor="lightgreen"];
-    
-    raise_with_object [label="7. RAISE OBJECT\n• Lift object from surface\n• Prepare for transport", fillcolor="skyblue"];
-    
+    // Transfer step (between locations)
     move_to_dropoff [label="8. TRANSFER TO DROPOFF ◼\n• Move to dropoff location\n• Rotate gripper at midpoint", fillcolor="skyblue"];
     
-    lower_for_dropoff [label="9. LOWER AT DROPOFF\n• Lower to release position\n• Prepare to release object", fillcolor="skyblue"];
+    // Dropoff Location Cluster
+    subgraph cluster_dropoff {
+        label = "DROPOFF LOCATION";
+        fontsize=14;
+        fontname="Arial Bold";
+        style="rounded,dashed";
+        color="darkgreen";
+        bgcolor="honeydew";
+        
+        // Process nodes for dropoff location
+        lower_for_dropoff [label="9. LOWER AT DROPOFF\n• Lower to release position\n• Prepare to release object", fillcolor="skyblue"];
+        
+        release_object [label="10. RELEASE OBJECT\n• Turn off suction\n• Drop object at destination", fillcolor="lightgreen"];
+        
+        wait_after_release [label="11. HOLD BRIEFLY\n• Pause for 100ms\n• Ensure clean release", fillcolor="lightgreen"];
+        
+        raise_after_dropoff [label="12. RAISE ARM\n• Lift empty gripper\n• Clear the dropoff area", fillcolor="skyblue"];
+        
+        signal_stage2 [label="13. SIGNAL NEXT MACHINE\n• Send signal to Stage 2\n• Indicate completion", fillcolor="lightgreen"];
+    }
     
-    release_object [label="10. RELEASE OBJECT\n• Turn off suction\n• Drop object at destination", fillcolor="lightgreen"];
-    
-    wait_after_release [label="11. HOLD BRIEFLY\n• Pause for 100ms\n• Ensure clean release", fillcolor="lightgreen"];
-    
-    raise_after_dropoff [label="12. RAISE ARM\n• Lift empty gripper\n• Clear the dropoff area", fillcolor="skyblue"];
-    
-    signal_stage2 [label="13. SIGNAL NEXT MACHINE\n• Send signal to Stage 2\n• Indicate completion", fillcolor="lightgreen"];
-    
+    // Return step (between locations)
     return_to_pickup [label="14. RETURN TO START ◼\n• Move back to pickup location\n• Reset for next cycle", fillcolor="skyblue"];
     
     // Edge connections with larger font labels
@@ -69,7 +92,4 @@ digraph G {
     raise_after_dropoff -> signal_stage2 [label="Fully raised", fontsize=11];
     signal_stage2 -> return_to_pickup [label="Signal sent", fontsize=11];
     return_to_pickup -> start [label="Cycle complete", fontsize=11];
-    
-    // Adjust layout for horizontal flow
-    {rank=same; start; return_to_pickup}
 } 
