@@ -1,0 +1,76 @@
+digraph "Transfer_Arm_Flow" {
+    // Graph settings
+    graph [fontname="Arial", ranksep=0.5, nodesep=0.8, splines=true];
+    node [fontname="Arial", fontsize=12, style="filled,rounded", shape=box, margin="0.3,0.2"];
+    edge [fontname="Arial", fontsize=10, penwidth=2];
+    
+    // Legend
+    subgraph cluster_legend {
+        label="Legend";
+        style=filled;
+        color=lightgrey;
+        fontsize=14;
+        
+        legend_main [label="Main Process", fillcolor=lightyellow];
+        legend_alt [label="Alternative Path", fillcolor=lightblue];
+        legend_error [label="Error Condition", fillcolor=lightpink];
+        
+        legend_main -> legend_alt [style=invis];
+        legend_alt -> legend_error [style=invis];
+    }
+
+    // Nodes
+    start [label="1. Initialization\n• Power on system\n• Home all actuators\n• Check sensors", fillcolor=lightyellow];
+    
+    wait_pickup [label="2. Wait for Pickup Signal\n• Monitor input signal\n• Ready state indicator on", fillcolor=lightyellow];
+    
+    position_pickup [label="3. Move to Pickup Position\n• Rotate arm to source\n• Lower gripper\n• Activate vacuum/gripper", fillcolor=lightyellow];
+    
+    check_grasp [label="4. Check Object Grasp\n• Verify vacuum seal/grip\n• Check load sensor", shape=diamond, fillcolor=lightyellow];
+    
+    retry_pickup [label="5. Retry Pickup\n• Adjust position\n• Re-attempt grasp", fillcolor=lightblue];
+    
+    pickup_error [label="6. Pickup Error\n• Signal failed pickup\n• Return to home position", fillcolor=lightpink];
+    
+    transfer [label="7. Transfer Object\n• Raise arm\n• Rotate to destination\n• Maintain grip during motion", fillcolor=lightyellow];
+    
+    position_place [label="8. Move to Place Position\n• Lower arm to target\n• Align with destination", fillcolor=lightyellow];
+    
+    release_object [label="9. Release Object\n• Deactivate vacuum/gripper\n• Slight delay for release", fillcolor=lightyellow];
+    
+    check_release [label="10. Verify Release\n• Check vacuum/grip sensor\n• Verify weight change", shape=diamond, fillcolor=lightyellow];
+    
+    retry_release [label="11. Retry Release\n• Adjust position\n• Re-attempt release", fillcolor=lightblue];
+    
+    release_error [label="12. Release Error\n• Signal failed release\n• Return to safe position", fillcolor=lightpink];
+    
+    return_home [label="13. Return to Home\n• Raise arm\n• Return to neutral position\n• Reset sensors", fillcolor=lightyellow];
+    
+    complete_cycle [label="14. Complete Cycle\n• Signal completion\n• Log operation data\n• Ready for next cycle", fillcolor=lightyellow];
+    
+    // Edges
+    start -> wait_pickup;
+    wait_pickup -> position_pickup;
+    position_pickup -> check_grasp;
+    
+    check_grasp -> transfer [label="Success"];
+    check_grasp -> retry_pickup [label="Retry"];
+    check_grasp -> pickup_error [label="Failed"];
+    
+    retry_pickup -> check_grasp;
+    pickup_error -> wait_pickup;
+    
+    transfer -> position_place;
+    position_place -> release_object;
+    release_object -> check_release;
+    
+    check_release -> return_home [label="Success"];
+    check_release -> retry_release [label="Retry"];
+    check_release -> release_error [label="Failed"];
+    
+    retry_release -> check_release;
+    release_error -> return_home;
+    
+    return_home -> complete_cycle;
+    complete_cycle -> wait_pickup [label="Next Cycle"];
+} 
