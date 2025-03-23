@@ -19,15 +19,20 @@ ESP32-based control system for a robotic transfer arm that picks up objects from
 - `flowchart.dot`: DOT file for the process flowchart
 - `transfer_arm_flowchart.png`: Visual representation of the control flow
 
-## Operation Flow
+## Operation Flow - Pick Cycle
 The system operates following these main steps:
 1. Initialization and homing
-2. Waiting for pickup signal
+2. Waiting for pick cycle trigger (either from a limit switch or Stage 1 machine)
 3. Moving to pickup position
 4. Gripping the object
 5. Transferring to target position
 6. Releasing the object
 7. Returning to home position
+
+### Pick Cycle Trigger
+The pick cycle can be initiated by either:
+- A limit switch (active high) being pressed
+- A high signal received from the "Stage 1" machine
 
 See the flowchart for a detailed visual representation of the process.
 
