@@ -34,7 +34,7 @@ digraph G {
     
     continue_lower [label="5. LOWER COMPLETELY\n• Lower to final pickup position\n• Make contact with object", fillcolor="skyblue"];
     
-    wait_pickup [label="6. HOLD BRIEFLY\n• Pause for 500ms\n• Ensure secure grip", fillcolor="lightgreen"];
+    wait_pickup [label="6. HOLD BRIEFLY\n• Pause for 300ms\n• Ensure secure grip", fillcolor="lightgreen"];
     
     raise_with_object [label="7. RAISE OBJECT\n• Lift object from surface\n• Prepare for transport", fillcolor="skyblue"];
     

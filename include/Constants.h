@@ -54,7 +54,7 @@ const int SERVO_PICKUP_POS = 0;      // Servo pickup position (in degrees)
 const int SERVO_DROPOFF_POS = 90;    // Servo dropoff position (90 degrees from pickup)
 
 // Timing constants
-const unsigned long PICKUP_HOLD_TIME = 500;   // Hold time at pickup position (500ms)
+const unsigned long PICKUP_HOLD_TIME = 300;   // Hold time at pickup position (300ms)
 const unsigned long DROPOFF_HOLD_TIME = 100;  // Hold time at dropoff position (100ms)
 
 // Stepper settings
