@@ -1,27 +1,27 @@
 digraph G {
     // Graph settings
     rankdir=LR;  // Left to Right direction
-    size="28,14";  // Larger width for better horizontal spacing
-    dpi=300;
+    size="40,20";  // Much larger dimensions
+    dpi=400;  // Higher DPI
     ratio=fill;
-    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, margin=0.3];
-    edge [fontname="Arial", fontsize=11, penwidth=1.8];
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=14, margin=0.4]; // Larger font and margin
+    edge [fontname="Arial", fontsize=12, penwidth=2.0]; // Thicker edges, larger font
     splines=true;
     
     // Legend
     subgraph cluster_legend {
         label = "Legend";
-        fontsize=12;
-        fontname="Arial";
+        fontsize=14;
+        fontname="Arial Bold";
         style="rounded";
         color=gray;
-        node [margin=0.2, fontsize=10];
+        node [margin=0.2, fontsize=12];
         
         main [label="Main Operation", fillcolor="gold1", penwidth=1];
         position [label="Position Movement", fillcolor="skyblue", penwidth=1];
         action [label="Action Step", fillcolor="lightgreen", penwidth=1];
         servo [label="Servo Action", shape="box", style="filled", fillcolor="skyblue", penwidth=1];
-        servo_icon [label="", shape="square", style="filled", fillcolor="pink", width=0.2, height=0.2, fixedsize=true];
+        servo_icon [label="", shape="square", style="filled", fillcolor="pink", width=0.3, height=0.3, fixedsize=true];
     }
     
     // Start node (outside of locations)
@@ -30,11 +30,12 @@ digraph G {
     // Pickup Location Cluster
     subgraph cluster_pickup {
         label = "PICKUP LOCATION";
-        fontsize=14;
+        fontsize=16;
         fontname="Arial Bold";
         style="rounded,dashed";
         color="darkblue";
         bgcolor="aliceblue";
+        penwidth=2.0;
         
         // Process nodes for pickup location
         move_to_pickup [label="2. MOVE TO PICKUP LOCATION ◼\n• Position arm at pickup location\n• Prepare for pickup sequence", fillcolor="skyblue"];
@@ -56,11 +57,12 @@ digraph G {
     // Dropoff Location Cluster
     subgraph cluster_dropoff {
         label = "DROPOFF LOCATION";
-        fontsize=14;
+        fontsize=16;
         fontname="Arial Bold";
         style="rounded,dashed";
         color="darkgreen";
         bgcolor="honeydew";
+        penwidth=2.0;
         
         // Process nodes for dropoff location
         lower_for_dropoff [label="9. LOWER AT DROPOFF\n• Lower to release position\n• Prepare to release object", fillcolor="skyblue"];
@@ -78,18 +80,18 @@ digraph G {
     return_to_pickup [label="14. RETURN TO START ◼\n• Move back to pickup location\n• Reset for next cycle", fillcolor="skyblue"];
     
     // Edge connections with larger font labels
-    start -> move_to_pickup [label="Signal received", fontsize=11];
-    move_to_pickup -> lower_for_pickup [label="At pickup location", fontsize=11];
-    lower_for_pickup -> activate_vacuum [label="At vacuum height", fontsize=11];
-    activate_vacuum -> continue_lower [label="Vacuum on", fontsize=11];
-    continue_lower -> wait_pickup [label="Fully lowered", fontsize=11];
-    wait_pickup -> raise_with_object [label="Time elapsed", fontsize=11];
-    raise_with_object -> move_to_dropoff [label="Fully raised", fontsize=11];
-    move_to_dropoff -> lower_for_dropoff [label="At dropoff location", fontsize=11];
-    lower_for_dropoff -> release_object [label="At release height", fontsize=11];
-    release_object -> wait_after_release [label="Vacuum off", fontsize=11];
-    wait_after_release -> raise_after_dropoff [label="Time elapsed", fontsize=11];
-    raise_after_dropoff -> signal_stage2 [label="Fully raised", fontsize=11];
-    signal_stage2 -> return_to_pickup [label="Signal sent", fontsize=11];
-    return_to_pickup -> start [label="Cycle complete", fontsize=11];
+    start -> move_to_pickup [label="Signal received", fontsize=12];
+    move_to_pickup -> lower_for_pickup [label="At pickup location", fontsize=12];
+    lower_for_pickup -> activate_vacuum [label="At vacuum height", fontsize=12];
+    activate_vacuum -> continue_lower [label="Vacuum on", fontsize=12];
+    continue_lower -> wait_pickup [label="Fully lowered", fontsize=12];
+    wait_pickup -> raise_with_object [label="Time elapsed", fontsize=12];
+    raise_with_object -> move_to_dropoff [label="Fully raised", fontsize=12];
+    move_to_dropoff -> lower_for_dropoff [label="At dropoff location", fontsize=12];
+    lower_for_dropoff -> release_object [label="At release height", fontsize=12];
+    release_object -> wait_after_release [label="Vacuum off", fontsize=12];
+    wait_after_release -> raise_after_dropoff [label="Time elapsed", fontsize=12];
+    raise_after_dropoff -> signal_stage2 [label="Fully raised", fontsize=12];
+    signal_stage2 -> return_to_pickup [label="Signal sent", fontsize=12];
+    return_to_pickup -> start [label="Cycle complete", fontsize=12];
 } 
