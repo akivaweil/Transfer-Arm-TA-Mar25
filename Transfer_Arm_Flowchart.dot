@@ -38,7 +38,7 @@ digraph G {
     
     raise_with_object [label="7. RAISE OBJECT\n• Lift object from surface\n• Prepare for transport", fillcolor="skyblue"];
     
-    move_to_dropoff [label="8. TRANSPORT TO DROPOFF\n• Move to dropoff location\n• Rotate gripper at midpoint", fillcolor="skyblue"];
+    move_to_dropoff [label="8. TRANSFER TO DROPOFF\n• Move to dropoff location\n• Rotate gripper at midpoint", fillcolor="skyblue"];
     
     lower_for_dropoff [label="9. LOWER AT DROPOFF\n• Lower to release position\n• Prepare to release object", fillcolor="skyblue"];
     
