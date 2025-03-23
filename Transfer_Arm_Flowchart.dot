@@ -19,7 +19,6 @@ digraph G {
         
         main [label="Main Process", fillcolor="gold1", penwidth=1];
         alternative [label="Alternative Path", fillcolor="skyblue", penwidth=1];
-        error [label="Error Condition", fillcolor="salmon", penwidth=1];
     }
     
     // Start node
@@ -52,9 +51,6 @@ digraph G {
     
     return_to_pickup [label="14. RETURN_TO_PICKUP\n• Move X-axis back to pickup position\n• Reset servo to pickup position\n• Complete cycle and return to waiting", fillcolor="gold1"];
     
-    // Error node
-    error_timeout [label="ERROR: TIMEOUT\n• Operation exceeded time limit\n• Check for mechanical issues\n• Restart system if needed", fillcolor="salmon"];
-    
     // Edge connections with larger font labels
     start -> move_to_pickup [label="Stage 1 signal\nor Limit switch", fontsize=11];
     move_to_pickup -> lower_z_pickup [label="X at pickup position", fontsize=11];
@@ -72,12 +68,8 @@ digraph G {
     signal_stage2 -> return_to_pickup;
     return_to_pickup -> start [label="X at pickup position", fontsize=11];
     
-    // Error path
-    {move_to_pickup, lower_z_pickup, raise_z, move_to_dropoff, lower_z_dropoff, raise_z_after, return_to_pickup} -> error_timeout [style=dashed, color=red, label="Timeout", fontsize=11];
-    
     // Ranking to improve layout
     {rank=same; start}
     {rank=same; move_to_pickup}
-    {rank=same; error_timeout}
     {rank=same; return_to_pickup}
 } 

@@ -43,17 +43,9 @@ void setup() {
   initializePickCycle();
   
   // Home the system (automatic on startup - no user input required)
-  bool homingSuccess = homeSystem();
+  homeSystem();
   
-  if (homingSuccess) {
-    Serial.println("Transfer Arm Initialized Successfully");
-  } else {
-    Serial.println("Homing Failed - Check switches and restart");
-    while(1) { 
-      // Error state - halt operation
-      delay(1000);
-    }
-  }
+  Serial.println("Transfer Arm Initialized Successfully");
 }
 
 // Main loop function - runs repeatedly

@@ -60,7 +60,6 @@ const unsigned long DROPOFF_HOLD_TIME = 100;  // Hold time at dropoff position (
 // Stepper settings
 const int MAX_SPEED = 2000;          // Maximum speed in steps per second
 const int ACCELERATION = 1000;       // Acceleration in steps per second^2
-const unsigned long HOMING_TIMEOUT = 30000; // Timeout for homing sequence (30 seconds)
 
 // State enum for pick cycle
 enum PickCycleState {

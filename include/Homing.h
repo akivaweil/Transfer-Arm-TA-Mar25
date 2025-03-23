@@ -4,8 +4,8 @@
 #include <AccelStepper.h>
 
 // Function declarations
-bool homeSystem();
-bool homeZAxis();
-bool homeXAxis();
+void homeSystem();
+void homeZAxis();
+void homeXAxis();
 
 #endif // HOMING_H 
