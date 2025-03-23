@@ -1,0 +1,81 @@
+digraph G {
+    // Graph settings
+    rankdir=TB;
+    size="11,8";
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11];
+    edge [fontname="Arial", fontsize=10, penwidth=1.5];
+    splines=true;
+    
+    // Legend
+    subgraph cluster_legend {
+        label = "Legend";
+        fontsize=10;
+        fontname="Arial";
+        style="rounded";
+        color=gray;
+        node [margin=0.1, fontsize=9];
+        
+        main [label="Main Process", fillcolor="gold1", penwidth=1];
+        alternative [label="Alternative Path", fillcolor="skyblue", penwidth=1];
+        error [label="Error Condition", fillcolor="salmon", penwidth=1];
+    }
+    
+    // Start node
+    start [label="1. WAITING\n• System idle, waiting for trigger\n• Monitors Stage 1 signal (active high)\n• Monitors limit switch input", fillcolor="gold1"];
+    
+    // Process nodes
+    move_to_pickup [label="2. MOVE_TO_PICKUP\n• Move X-axis to pickup position\n• Set servo to pickup position\n• Prepare for Z-axis operation", fillcolor="gold1"];
+    
+    lower_z_pickup [label="3. LOWER_Z_FOR_PICKUP\n• Lower Z-axis to suction start position\n• Prepare for vacuum activation\n• Position system for object pickup", fillcolor="gold1"];
+    
+    activate_vacuum [label="4. ACTIVATE_VACUUM\n• Turn on vacuum solenoid\n• Start suction for object pickup\n• Prepare for continued lowering", fillcolor="gold1"];
+    
+    continue_lower [label="5. CONTINUE_LOWERING_Z\n• Continue Z-axis lowering\n• Reach full pickup position\n• Ensure secure contact with object", fillcolor="gold1"];
+    
+    wait_pickup [label="6. WAIT_AT_PICKUP\n• Hold at pickup position\n• Allow vacuum to secure object\n• Wait for PICKUP_HOLD_TIME (500ms)", fillcolor="gold1"];
+    
+    raise_z [label="7. RAISE_Z_WITH_OBJECT\n• Lift Z-axis with object secured\n• Move to Z_UP_POS\n• Prepare for X-axis motion", fillcolor="gold1"];
+    
+    move_to_dropoff [label="8. MOVE_TO_DROPOFF\n• Move X-axis to dropoff position\n• Rotate servo at midpoint\n• Position for object placement", fillcolor="gold1"];
+    
+    lower_z_dropoff [label="9. LOWER_Z_FOR_DROPOFF\n• Lower Z-axis to dropoff position\n• Position object for release\n• Prepare for vacuum deactivation", fillcolor="gold1"];
+    
+    release_object [label="10. RELEASE_OBJECT\n• Turn off vacuum solenoid\n• Release object at dropoff location\n• Start brief hold timer", fillcolor="gold1"];
+    
+    wait_after_release [label="11. WAIT_AFTER_RELEASE\n• Wait briefly after release\n• Hold for DROPOFF_HOLD_TIME (100ms)\n• Ensure object is fully released", fillcolor="gold1"];
+    
+    raise_z_after [label="12. RAISE_Z_AFTER_DROPOFF\n• Raise Z-axis after object release\n• Return to Z_UP_POS\n• Prepare for signaling", fillcolor="gold1"];
+    
+    signal_stage2 [label="13. SIGNAL_STAGE2\n• Send signal pulse to Stage 2\n• Signal machine that object is ready\n• Prepare to return to pickup position", fillcolor="gold1"];
+    
+    return_to_pickup [label="14. RETURN_TO_PICKUP\n• Move X-axis back to pickup position\n• Reset servo to pickup position\n• Complete cycle and return to waiting", fillcolor="gold1"];
+    
+    // Error node
+    error_timeout [label="ERROR: TIMEOUT\n• Operation exceeded time limit\n• Check for mechanical issues\n• Restart system if needed", fillcolor="salmon"];
+    
+    // Edge connections
+    start -> move_to_pickup [label="Stage 1 signal\nor Limit switch"];
+    move_to_pickup -> lower_z_pickup [label="X at pickup position"];
+    lower_z_pickup -> activate_vacuum [label="Z at suction start"];
+    activate_vacuum -> continue_lower;
+    continue_lower -> wait_pickup [label="Z fully lowered"];
+    wait_pickup -> raise_z [label="Hold time elapsed"];
+    raise_z -> move_to_dropoff [label="Z fully raised"];
+    
+    move_to_dropoff -> lower_z_dropoff [label="X at dropoff position"];
+    lower_z_dropoff -> release_object [label="Z at dropoff position"];
+    release_object -> wait_after_release;
+    wait_after_release -> raise_z_after [label="Hold time elapsed"];
+    raise_z_after -> signal_stage2 [label="Z fully raised"];
+    signal_stage2 -> return_to_pickup;
+    return_to_pickup -> start [label="X at pickup position"];
+    
+    // Error path
+    {move_to_pickup, lower_z_pickup, raise_z, move_to_dropoff, lower_z_dropoff, raise_z_after, return_to_pickup} -> error_timeout [style=dashed, color=red, label="Timeout"];
+    
+    // Ranking to improve layout
+    {rank=same; start}
+    {rank=same; move_to_pickup}
+    {rank=same; error_timeout}
+    {rank=same; return_to_pickup}
+} 

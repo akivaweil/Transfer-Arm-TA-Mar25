@@ -1,9 +1,9 @@
 #ifndef PICK_CYCLE_H
 #define PICK_CYCLE_H
 
-#include "../include/Constants.h"
+#include "Constants.h"
 
-// Function declarations
+// Functions for the pick cycle state machine
 void initializePickCycle();
 void updatePickCycle();
 PickCycleState getCurrentState();
