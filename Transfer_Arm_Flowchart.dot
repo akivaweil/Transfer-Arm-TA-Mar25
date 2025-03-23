@@ -21,7 +21,7 @@ digraph G {
         position [label="Position Movement", fillcolor="skyblue", penwidth=1];
         action [label="Action Step", fillcolor="lightgreen", penwidth=1];
         servo [label="Servo Action", shape="box", style="filled", fillcolor="skyblue", penwidth=1];
-        servo_icon [label="◼", shape="square", style="filled", fillcolor="pink", width=0.2, height=0.2, fixedsize=true];
+        servo_icon [label="", shape="square", style="filled", fillcolor="pink", width=0.2, height=0.2, fixedsize=true];
     }
     
     // Start node
