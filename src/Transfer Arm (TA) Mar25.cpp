@@ -23,14 +23,15 @@ const int STEPS_PER_REV = 400;       // Steps per revolution for steppers (1.8°
 const int PULLEY_TEETH = 20;         // Number of teeth on the pulley
 const int BELT_PITCH = 2;            // GT2 belt pitch in mm
 const float STEPS_PER_MM = STEPS_PER_REV / (PULLEY_TEETH * BELT_PITCH); // Steps per mm of linear movement
+const float STEPS_PER_INCH = STEPS_PER_MM * 25.4;  // Convert to steps per inch
 
 // Positions
 const int X_HOME_POS = 0;            // X-axis home position (in steps)
 const int Z_HOME_POS = 0;            // Z-axis home position (in steps)
 const int X_PICKUP_POS = 500;        // X-axis pickup position (in steps) - adjust as needed
 const int X_PLACE_POS = 1500;        // X-axis place position (in steps) - adjust as needed
-const int Z_UP_POS = 0;              // Z-axis up position (in steps)
-const int Z_DOWN_POS = 800;          // Z-axis down position (in steps) - adjust as needed
+const int Z_UP_POS = int(5 * STEPS_PER_INCH);  // Z-axis up position (5 inches up from home)
+const int Z_DOWN_POS = 0;            // Z-axis down position (at home)
 
 const int SERVO_HOME_POS = 90;       // Servo home position (in degrees)
 const int SERVO_PICKUP_POS = 0;      // Servo pickup position (in degrees) - adjust as needed
@@ -47,8 +48,9 @@ AccelStepper zStepper(AccelStepper::DRIVER, Z_STEP_PIN, Z_DIR_PIN);
 Servo gripperServo;
 
 // Function prototypes
-bool homeXAxis();
+bool homeSystem();
 bool homeZAxis();
+bool homeXAxis();
 bool moveToPosition(AccelStepper &stepper, long position);
 bool Wait(unsigned long delayTime, unsigned long* startTimePtr);
 
@@ -92,8 +94,8 @@ void setup() {
   gripperServo.attach(SERVO_PIN);
   gripperServo.write(SERVO_HOME_POS);
   
-  // Home the axes
-  bool homingSuccess = homeXAxis() && homeZAxis();
+  // Home the system
+  bool homingSuccess = homeSystem();
   
   if (homingSuccess) {
     Serial.println("Transfer Arm Initialized Successfully");
@@ -153,34 +155,41 @@ void loop() {
   }
 }
 
-// Home the X axis
-bool homeXAxis() {
-  Serial.println("Homing X axis...");
+// Main homing sequence that coordinates all axes according to the specified sequence
+bool homeSystem() {
+  Serial.println("Starting homing sequence...");
   
-  // Move towards home switch
-  xStepper.setSpeed(-500);  // Slow speed in negative direction
-  
-  unsigned long startTime = millis();
-  
-  // Keep stepping until home switch is triggered (active HIGH)
-  while (digitalRead(X_HOME_SWITCH_PIN) == LOW) {
-    xStepper.runSpeed();
-    yield();  // Allow ESP32 to handle background tasks
-    
-    // Check for timeout
-    if (millis() - startTime > HOMING_TIMEOUT) {
-      Serial.println("X-axis homing timeout!");
-      return false;
-    }
+  // 1. Home Z axis first
+  if (!homeZAxis()) {
+    return false;
   }
   
-  // Stop the motor
-  xStepper.stop();
+  // 2. Move Z axis up 5 inches
+  Serial.println("Moving Z-axis up 5 inches from home...");
+  zStepper.moveTo(Z_UP_POS);
   
-  // Set current position as home
-  xStepper.setCurrentPosition(X_HOME_POS);
+  // Wait for Z movement to complete
+  while (zStepper.distanceToGo() != 0) {
+    zStepper.run();
+    yield();
+  }
   
-  Serial.println("X axis homed");
+  // 3. Home X axis
+  if (!homeXAxis()) {
+    return false;
+  }
+  
+  // 4. Move X axis to pickup position
+  Serial.println("Moving X-axis to pickup position...");
+  xStepper.moveTo(X_PICKUP_POS);
+  
+  // Wait for X movement to complete
+  while (xStepper.distanceToGo() != 0) {
+    xStepper.run();
+    yield();
+  }
+  
+  Serial.println("Homing sequence completed");
   return true;
 }
 
@@ -212,6 +221,37 @@ bool homeZAxis() {
   zStepper.setCurrentPosition(Z_HOME_POS);
   
   Serial.println("Z axis homed");
+  return true;
+}
+
+// Home the X axis
+bool homeXAxis() {
+  Serial.println("Homing X axis...");
+  
+  // Move towards home switch
+  xStepper.setSpeed(-500);  // Slow speed in negative direction
+  
+  unsigned long startTime = millis();
+  
+  // Keep stepping until home switch is triggered (active HIGH)
+  while (digitalRead(X_HOME_SWITCH_PIN) == LOW) {
+    xStepper.runSpeed();
+    yield();  // Allow ESP32 to handle background tasks
+    
+    // Check for timeout
+    if (millis() - startTime > HOMING_TIMEOUT) {
+      Serial.println("X-axis homing timeout!");
+      return false;
+    }
+  }
+  
+  // Stop the motor
+  xStepper.stop();
+  
+  // Set current position as home
+  xStepper.setCurrentPosition(X_HOME_POS);
+  
+  Serial.println("X axis homed");
   return true;
 }
 

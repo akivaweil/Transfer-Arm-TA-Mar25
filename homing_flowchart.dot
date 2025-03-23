@@ -27,14 +27,21 @@ digraph "Transfer_Arm_Homing_Flow" {
 
     // Nodes
     start_homing [label="1. Begin Homing", fillcolor=lightyellow];
-    home_x [label="2. Home X-Axis", fillcolor=lightyellow];
-    home_z [label="3. Home Z-Axis", fillcolor=lightyellow];
-    home_servo [label="4. Home Servo", fillcolor=lightyellow];
-    homing_complete [label="5. Homing Complete", fillcolor=lightyellow];
+    
+    home_z [label="2. Home Z-Axis\n• Move Z-axis down until homing sensor triggers", fillcolor=lightyellow];
+    
+    move_z_up [label="3. Move Z-Axis Up\n• Move Z-axis up 5 inches from home", fillcolor=lightyellow];
+    
+    home_x [label="4. Home X-Axis\n• Move X-axis until homing switch triggers", fillcolor=lightyellow];
+    
+    move_x_pickup [label="5. Move X to Pickup\n• Move X-axis to pickup position", fillcolor=lightyellow];
+    
+    homing_complete [label="6. Homing Complete\n• System ready at pickup position", fillcolor=lightyellow];
     
     // Edges
-    start_homing -> home_x;
-    home_x -> home_z;
-    home_z -> home_servo;
-    home_servo -> homing_complete;
+    start_homing -> home_z;
+    home_z -> move_z_up;
+    move_z_up -> home_x;
+    home_x -> move_x_pickup;
+    move_x_pickup -> homing_complete;
 } 
