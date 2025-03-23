@@ -7,8 +7,8 @@
 // Inputs
 const int LIMIT_SWITCH_PIN = 34;     // Limit switch input (active high)
 const int STAGE1_SIGNAL_PIN = 35;    // Stage 1 machine signal input
-const int X_HOME_SWITCH_PIN = 32;    // X-axis home limit switch
-const int Z_HOME_SWITCH_PIN = 33;    // Z-axis home limit switch
+const int X_HOME_SWITCH_PIN = 32;    // X-axis home limit switch (active high)
+const int Z_HOME_SWITCH_PIN = 33;    // Z-axis home limit switch (active high)
 
 // Outputs
 const int X_STEP_PIN = 25;           // X-axis stepper motor step pin
@@ -39,6 +39,7 @@ const int SERVO_PLACE_POS = 180;     // Servo place position (in degrees) - adju
 // Stepper settings
 const int MAX_SPEED = 2000;          // Maximum speed in steps per second
 const int ACCELERATION = 1000;       // Acceleration in steps per second^2
+const unsigned long HOMING_TIMEOUT = 30000; // Timeout for homing sequence (30 seconds)
 
 // Create instances
 AccelStepper xStepper(AccelStepper::DRIVER, X_STEP_PIN, X_DIR_PIN);
@@ -46,8 +47,8 @@ AccelStepper zStepper(AccelStepper::DRIVER, Z_STEP_PIN, Z_DIR_PIN);
 Servo gripperServo;
 
 // Function prototypes
-void homeXAxis();
-void homeZAxis();
+bool homeXAxis();
+bool homeZAxis();
 bool moveToPosition(AccelStepper &stepper, long position);
 bool Wait(unsigned long delayTime, unsigned long* startTimePtr);
 
@@ -74,8 +75,8 @@ void setup() {
   // Configure input pins
   pinMode(LIMIT_SWITCH_PIN, INPUT);
   pinMode(STAGE1_SIGNAL_PIN, INPUT);
-  pinMode(X_HOME_SWITCH_PIN, INPUT_PULLUP);  // Typically active LOW
-  pinMode(Z_HOME_SWITCH_PIN, INPUT_PULLUP);  // Typically active LOW
+  pinMode(X_HOME_SWITCH_PIN, INPUT);  // Active HIGH switch
+  pinMode(Z_HOME_SWITCH_PIN, INPUT);  // Active HIGH switch
   
   // Configure output pins
   pinMode(SOLENOID_RELAY_PIN, OUTPUT);
@@ -92,10 +93,17 @@ void setup() {
   gripperServo.write(SERVO_HOME_POS);
   
   // Home the axes
-  homeXAxis();
-  homeZAxis();
+  bool homingSuccess = homeXAxis() && homeZAxis();
   
-  Serial.println("Transfer Arm Initialized");
+  if (homingSuccess) {
+    Serial.println("Transfer Arm Initialized Successfully");
+  } else {
+    Serial.println("Homing Failed - Check switches and restart");
+    while(1) { 
+      // Error state - halt operation
+      delay(1000);
+    }
+  }
 }
 
 // Main loop function - runs repeatedly
@@ -146,16 +154,24 @@ void loop() {
 }
 
 // Home the X axis
-void homeXAxis() {
+bool homeXAxis() {
   Serial.println("Homing X axis...");
   
   // Move towards home switch
   xStepper.setSpeed(-500);  // Slow speed in negative direction
   
-  // Keep stepping until home switch is triggered
-  while (digitalRead(X_HOME_SWITCH_PIN) == HIGH) {  // Assuming active LOW
+  unsigned long startTime = millis();
+  
+  // Keep stepping until home switch is triggered (active HIGH)
+  while (digitalRead(X_HOME_SWITCH_PIN) == LOW) {
     xStepper.runSpeed();
     yield();  // Allow ESP32 to handle background tasks
+    
+    // Check for timeout
+    if (millis() - startTime > HOMING_TIMEOUT) {
+      Serial.println("X-axis homing timeout!");
+      return false;
+    }
   }
   
   // Stop the motor
@@ -165,19 +181,28 @@ void homeXAxis() {
   xStepper.setCurrentPosition(X_HOME_POS);
   
   Serial.println("X axis homed");
+  return true;
 }
 
 // Home the Z axis
-void homeZAxis() {
+bool homeZAxis() {
   Serial.println("Homing Z axis...");
   
   // Move towards home switch
   zStepper.setSpeed(-500);  // Slow speed in negative direction
   
-  // Keep stepping until home switch is triggered
-  while (digitalRead(Z_HOME_SWITCH_PIN) == HIGH) {  // Assuming active LOW
+  unsigned long startTime = millis();
+  
+  // Keep stepping until home switch is triggered (active HIGH)
+  while (digitalRead(Z_HOME_SWITCH_PIN) == LOW) {
     zStepper.runSpeed();
     yield();  // Allow ESP32 to handle background tasks
+    
+    // Check for timeout
+    if (millis() - startTime > HOMING_TIMEOUT) {
+      Serial.println("Z-axis homing timeout!");
+      return false;
+    }
   }
   
   // Stop the motor
@@ -187,6 +212,7 @@ void homeZAxis() {
   zStepper.setCurrentPosition(Z_HOME_POS);
   
   Serial.println("Z axis homed");
+  return true;
 }
 
 // Move a stepper to a position and wait for completion

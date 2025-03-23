@@ -7,8 +7,18 @@ ESP32-based control system for a robotic transfer arm that picks up objects from
 - **Z-Axis Stepper**: Controls up/down movement (400 steps/rev, 20T pulley, 6mm 2GT belt)
 - **Servo**: 24V 160kg servo with 270° rotation range for gripper orientation
 - **Vacuum System**: Solenoid-controlled venturi suction for grabbing wood diamonds
+- **Homing Switches**: Active HIGH limit switches for X and Z axes
 
-## Basic Operation Flow
+## Operation Sequences
+
+### Homing Sequence
+1. **Begin Homing** - Initialize motors and prepare system
+2. **X-Axis Homing** - Move X-axis in negative direction until home switch activates (HIGH)
+3. **Z-Axis Homing** - Move Z-axis in negative direction until home switch activates (HIGH)
+4. **Servo Homing** - Set servo to neutral position (90°)
+5. **Verification** - Confirm all axes are properly homed with timeout protection
+
+### Pick Cycle
 1. **Initialization** - System power-on, home steppers and servo
 2. **Wait for Signal** - From limit switch (active high) or Stage 1 machine
 3. **Pick Position** - Move X-axis to pickup, lower Z-axis, rotate servo
@@ -28,8 +38,8 @@ Using Freenove ESP32 breakout board:
 - **Inputs**:
   - Limit Switch: Pin 34 (active high)
   - Stage 1 Signal: Pin 35
-  - X-Axis Home Switch: Pin 32
-  - Z-Axis Home Switch: Pin 33
+  - X-Axis Home Switch: Pin 32 (active high)
+  - Z-Axis Home Switch: Pin 33 (active high)
 - **Outputs**:
   - X-Axis Stepper Step: Pin 25
   - X-Axis Stepper Dir: Pin 26
