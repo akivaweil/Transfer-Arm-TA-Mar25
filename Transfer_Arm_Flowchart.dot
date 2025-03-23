@@ -1,19 +1,21 @@
 digraph G {
     // Graph settings
     rankdir=TB;
-    size="11,8";
-    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11];
-    edge [fontname="Arial", fontsize=10, penwidth=1.5];
+    size="14,20";
+    dpi=300;
+    ratio=fill;
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, margin=0.3];
+    edge [fontname="Arial", fontsize=11, penwidth=1.5];
     splines=true;
     
     // Legend
     subgraph cluster_legend {
         label = "Legend";
-        fontsize=10;
+        fontsize=12;
         fontname="Arial";
         style="rounded";
         color=gray;
-        node [margin=0.1, fontsize=9];
+        node [margin=0.2, fontsize=10];
         
         main [label="Main Process", fillcolor="gold1", penwidth=1];
         alternative [label="Alternative Path", fillcolor="skyblue", penwidth=1];
@@ -53,25 +55,25 @@ digraph G {
     // Error node
     error_timeout [label="ERROR: TIMEOUT\n• Operation exceeded time limit\n• Check for mechanical issues\n• Restart system if needed", fillcolor="salmon"];
     
-    // Edge connections
-    start -> move_to_pickup [label="Stage 1 signal\nor Limit switch"];
-    move_to_pickup -> lower_z_pickup [label="X at pickup position"];
-    lower_z_pickup -> activate_vacuum [label="Z at suction start"];
+    // Edge connections with larger font labels
+    start -> move_to_pickup [label="Stage 1 signal\nor Limit switch", fontsize=11];
+    move_to_pickup -> lower_z_pickup [label="X at pickup position", fontsize=11];
+    lower_z_pickup -> activate_vacuum [label="Z at suction start", fontsize=11];
     activate_vacuum -> continue_lower;
-    continue_lower -> wait_pickup [label="Z fully lowered"];
-    wait_pickup -> raise_z [label="Hold time elapsed"];
-    raise_z -> move_to_dropoff [label="Z fully raised"];
+    continue_lower -> wait_pickup [label="Z fully lowered", fontsize=11];
+    wait_pickup -> raise_z [label="Hold time elapsed", fontsize=11];
+    raise_z -> move_to_dropoff [label="Z fully raised", fontsize=11];
     
-    move_to_dropoff -> lower_z_dropoff [label="X at dropoff position"];
-    lower_z_dropoff -> release_object [label="Z at dropoff position"];
+    move_to_dropoff -> lower_z_dropoff [label="X at dropoff position", fontsize=11];
+    lower_z_dropoff -> release_object [label="Z at dropoff position", fontsize=11];
     release_object -> wait_after_release;
-    wait_after_release -> raise_z_after [label="Hold time elapsed"];
-    raise_z_after -> signal_stage2 [label="Z fully raised"];
+    wait_after_release -> raise_z_after [label="Hold time elapsed", fontsize=11];
+    raise_z_after -> signal_stage2 [label="Z fully raised", fontsize=11];
     signal_stage2 -> return_to_pickup;
-    return_to_pickup -> start [label="X at pickup position"];
+    return_to_pickup -> start [label="X at pickup position", fontsize=11];
     
     // Error path
-    {move_to_pickup, lower_z_pickup, raise_z, move_to_dropoff, lower_z_dropoff, raise_z_after, return_to_pickup} -> error_timeout [style=dashed, color=red, label="Timeout"];
+    {move_to_pickup, lower_z_pickup, raise_z, move_to_dropoff, lower_z_dropoff, raise_z_after, return_to_pickup} -> error_timeout [style=dashed, color=red, label="Timeout", fontsize=11];
     
     // Ranking to improve layout
     {rank=same; start}
