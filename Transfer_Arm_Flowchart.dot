@@ -1,7 +1,7 @@
 digraph G {
     // Graph settings
-    rankdir=TB;
-    size="14,20";
+    rankdir=LR;  // Left to Right direction
+    size="28,14";  // Larger width for better horizontal spacing
     dpi=300;
     ratio=fill;
     node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, margin=0.3];
@@ -62,7 +62,6 @@ digraph G {
     continue_lower -> wait_pickup [label="Fully lowered", fontsize=11];
     wait_pickup -> raise_with_object [label="Time elapsed", fontsize=11];
     raise_with_object -> move_to_dropoff [label="Fully raised", fontsize=11];
-    
     move_to_dropoff -> lower_for_dropoff [label="At dropoff location", fontsize=11];
     lower_for_dropoff -> release_object [label="At release height", fontsize=11];
     release_object -> wait_after_release [label="Vacuum off", fontsize=11];
@@ -71,8 +70,6 @@ digraph G {
     signal_stage2 -> return_to_pickup [label="Signal sent", fontsize=11];
     return_to_pickup -> start [label="Cycle complete", fontsize=11];
     
-    // Ranking to improve layout
-    {rank=same; start}
-    {rank=same; move_to_pickup}
-    {rank=same; return_to_pickup}
+    // Adjust layout for horizontal flow
+    {rank=same; start; return_to_pickup}
 } 
