@@ -26,14 +26,17 @@ digraph "Transfer_Arm_Flow" {
     }
 
     // Nodes
-    start [label="1. Initialization", fillcolor=lightyellow];
-    wait_pickup [label="2. Wait for Pick Cycle Signal", fillcolor=lightyellow];
-    pick_cycle [label="3. Pick Cycle", fillcolor=lightyellow];
-    return_home [label="4. Return to Home", fillcolor=lightyellow];
+    startup [label="1. System Startup\n• Power on\n• Automatic homing sequence", fillcolor=lightyellow];
+    
+    wait_pickup [label="2. Wait for Pick Cycle Signal\n• Limit switch (active high)\n• OR Stage 1 machine signal", fillcolor=lightyellow];
+    
+    pick_cycle [label="3. Pick Cycle\n• Execute pickup and placement", fillcolor=lightyellow];
+    
+    return_home [label="4. Return to Home\n• Move to pickup position", fillcolor=lightyellow];
     
     // Edges
-    start -> wait_pickup;
-    wait_pickup -> pick_cycle;
+    startup -> wait_pickup [label="Homing Complete"];
+    wait_pickup -> pick_cycle [label="Signal Received"];
     pick_cycle -> return_home;
     return_home -> wait_pickup [label="Next Cycle"];
 } 

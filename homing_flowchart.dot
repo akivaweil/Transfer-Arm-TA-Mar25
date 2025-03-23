@@ -6,7 +6,7 @@ digraph "Transfer_Arm_Homing_Flow" {
     
     // Title
     labelloc="t";
-    label="TRANSFER ARM HOMING SEQUENCE";
+    label="TRANSFER ARM AUTOMATIC HOMING SEQUENCE";
     fontsize=20;
     fontname="Arial Bold";
     
@@ -26,7 +26,7 @@ digraph "Transfer_Arm_Homing_Flow" {
     }
 
     // Nodes
-    start_homing [label="1. Begin Homing", fillcolor=lightyellow];
+    power_on [label="1. System Power On\n• Automatic startup sequence\n• No user input required", fillcolor=lightyellow];
     
     home_z [label="2. Home Z-Axis\n• Move Z-axis down until homing sensor triggers", fillcolor=lightyellow];
     
@@ -36,10 +36,10 @@ digraph "Transfer_Arm_Homing_Flow" {
     
     move_x_pickup [label="5. Move X to Pickup\n• Move X-axis to pickup position", fillcolor=lightyellow];
     
-    homing_complete [label="6. Homing Complete\n• System ready at pickup position", fillcolor=lightyellow];
+    homing_complete [label="6. Homing Complete\n• System ready at pickup position\n• Ready for pick cycle", fillcolor=lightyellow];
     
     // Edges
-    start_homing -> home_z;
+    power_on -> home_z;
     home_z -> move_z_up;
     move_z_up -> home_x;
     home_x -> move_x_pickup;
