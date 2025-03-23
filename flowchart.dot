@@ -4,6 +4,12 @@ digraph "Transfer_Arm_Flow" {
     node [fontname="Arial", fontsize=12, style="filled,rounded", shape=box, margin="0.3,0.2"];
     edge [fontname="Arial", fontsize=10, penwidth=2];
     
+    // Title
+    labelloc="t";
+    label="TRANSFER ARM CONTROL SYSTEM";
+    fontsize=20;
+    fontname="Arial Bold";
+    
     // Legend
     subgraph cluster_legend {
         label="Legend";
