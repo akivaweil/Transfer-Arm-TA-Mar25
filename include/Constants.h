@@ -3,19 +3,19 @@
 
 // Pin Definitions
 // Inputs
-const int LIMIT_SWITCH_PIN = 34;     // Limit switch input (active high)
-const int STAGE1_SIGNAL_PIN = 35;    // Stage 1 machine signal input (active high)
-const int X_HOME_SWITCH_PIN = 32;    // X-axis home limit switch (active high)
-const int Z_HOME_SWITCH_PIN = 33;    // Z-axis home limit switch (active high)
+const int START_BUTTON_PIN = 2;     // Start button input (active high)
+const int STAGE1_SIGNAL_PIN = 23;    // Stage 1 machine signal input (active high)
+const int X_HOME_SWITCH_PIN = 15;    // X-axis home limit switch (active high)
+const int Z_HOME_SWITCH_PIN = 13;    // Z-axis home limit switch (active high)
 
 // Outputs
-const int X_STEP_PIN = 25;           // X-axis stepper motor step pin
-const int X_DIR_PIN = 26;            // X-axis stepper motor direction pin
-const int Z_STEP_PIN = 27;           // Z-axis stepper motor step pin
-const int Z_DIR_PIN = 14;            // Z-axis stepper motor direction pin
-const int SERVO_PIN = 12;            // Servo control pin
-const int SOLENOID_RELAY_PIN = 13;   // Solenoid relay control pin
-const int STAGE2_SIGNAL_PIN = 23;    // Signal output to Stage 2 machine (active high)
+const int X_STEP_PIN = 27;           // X-axis stepper motor step pin
+const int X_DIR_PIN = 14;            // X-axis stepper motor direction pin
+const int Z_STEP_PIN = 19;           // Z-axis stepper motor step pin
+const int Z_DIR_PIN = 18;            // Z-axis stepper motor direction pin
+const int SERVO_PIN = 33;            // Servo control pin
+const int SOLENOID_RELAY_PIN = 34;   // Solenoid relay control pin
+const int STAGE2_SIGNAL_PIN = 25;    // Signal output to Stage 2 machine (active high)
 
 // Constants
 const int STEPS_PER_REV = 400;       // Steps per revolution for steppers (1.8° with 1/2 microstepping)

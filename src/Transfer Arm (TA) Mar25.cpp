@@ -20,7 +20,7 @@ void setup() {
   Serial.begin(115200);
   
   // Configure input pins
-  pinMode(LIMIT_SWITCH_PIN, INPUT);
+  pinMode(START_BUTTON_PIN, INPUT);
   pinMode(STAGE1_SIGNAL_PIN, INPUT);
   pinMode(X_HOME_SWITCH_PIN, INPUT);  // Active HIGH switch
   pinMode(Z_HOME_SWITCH_PIN, INPUT);  // Active HIGH switch

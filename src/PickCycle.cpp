@@ -1,3 +1,59 @@
+/*
+Instructional Guideline for PickCycle States:
+
+WAITING:
+  - The system is idle, awaiting a trigger to start the pick cycle.
+  - Trigger can be the limit switch (LIMIT_SWITCH_PIN) or a signal from Stage 1 (STAGE1_SIGNAL_PIN).
+
+MOVE_TO_PICKUP:
+  - The X-axis stepper motor moves the arm to the designated pickup position (X_PICKUP_POS).
+  - Once at the position, the gripper servo is set to the pickup angle (SERVO_PICKUP_POS).
+
+LOWER_Z_FOR_PICKUP:
+  - The Z-axis stepper motor lowers the arm towards the object to be picked up.
+  - Initially lowers to the Z_SUCTION_START_POS.
+
+ACTIVATE_VACUUM:
+  - The vacuum solenoid (SOLENOID_RELAY_PIN) is activated to create suction.
+
+CONTINUE_LOWERING_Z:
+  - The Z-axis continues to lower to the full pickup depth (Z_PICKUP_POS).
+
+WAIT_AT_PICKUP:
+  - The arm pauses at the pickup position for a defined duration (PICKUP_HOLD_TIME) to ensure a secure grip.
+
+RAISE_Z_WITH_OBJECT:
+  - The Z-axis stepper motor raises the arm, now holding the object, to the safe Z up position (Z_UP_POS).
+
+MOVE_TO_DROPOFF:
+  - The X-axis stepper motor moves the arm towards the designated drop-off position (X_DROPOFF_POS).
+  - During this movement, if the X-axis passes X_MIDPOINT_POS, the gripper servo rotates to SERVO_DROPOFF_POS.
+
+ROTATE_SERVO_MIDPOINT:
+  - This state is conceptual and handled within the MOVE_TO_DROPOFF logic.
+  - It signifies the point where the servo should rotate while the X-axis is in transit.
+
+LOWER_Z_FOR_DROPOFF:
+  - The Z-axis stepper motor lowers the arm to the drop-off height (Z_DROPOFF_POS).
+
+RELEASE_OBJECT:
+  - The vacuum solenoid is deactivated, releasing the object.
+
+WAIT_AFTER_RELEASE:
+  - The arm pauses briefly at the drop-off position (DROPOFF_HOLD_TIME) after releasing the object.
+
+RAISE_Z_AFTER_DROPOFF:
+  - The Z-axis stepper motor raises the arm back to the safe Z up position (Z_UP_POS).
+
+SIGNAL_STAGE2:
+  - A signal is sent to the Stage 2 machine (via STAGE2_SIGNAL_PIN) to indicate the completion of the drop-off.
+  - The signal is a brief HIGH pulse.
+
+RETURN_TO_PICKUP:
+  - The X-axis stepper motor moves the arm back to the pickup position (X_PICKUP_POS).
+  - The gripper servo is reset to the pickup angle (SERVO_PICKUP_POS).
+  - The cycle is complete, and the system returns to the WAITING state.
+*/
 #include <Arduino.h>
 #include <AccelStepper.h>
 #include <ESP32Servo.h>
@@ -45,7 +101,7 @@ void updatePickCycle() {
   switch (currentState) {
     case WAITING:
       // Check for pick cycle trigger
-      if (digitalRead(LIMIT_SWITCH_PIN) == HIGH || digitalRead(STAGE1_SIGNAL_PIN) == HIGH) {
+      if (digitalRead(START_BUTTON_PIN) == HIGH || digitalRead(STAGE1_SIGNAL_PIN) == HIGH) {
         Serial.println("Pick Cycle Triggered");
         currentState = MOVE_TO_PICKUP;
         stateTimer = 0;
