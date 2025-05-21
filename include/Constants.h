@@ -58,8 +58,8 @@ const unsigned long PICKUP_HOLD_TIME = 300;   // Hold time at pickup position (3
 const unsigned long DROPOFF_HOLD_TIME = 100;  // Hold time at dropoff position (100ms)
 
 // Stepper settings
-const int MAX_SPEED = 2000;          // Maximum speed in steps per second
-const int ACCELERATION = 1000;       // Acceleration in steps per second^2
+const int MAX_SPEED = 5000;          // Maximum speed in steps per second
+const int ACCELERATION = 5000;       // Acceleration in steps per second^2
 
 // State enum for pick cycle
 enum PickCycleState {

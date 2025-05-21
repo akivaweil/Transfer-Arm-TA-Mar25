@@ -1,7 +1,14 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
+#include <Bounce2.h>
 #include "../include/Constants.h"
 #include "../include/Homing.h"
+
+//* ************************************************************************
+//* **************************** HOMING LOGIC ******************************
+//* ************************************************************************
+// This file implements the homing sequence for the X and Z axes of the Transfer Arm.
+// It uses limit switches to define the home positions.
 
 // External references to stepper motors defined in main file
 extern AccelStepper xStepper;
@@ -48,8 +55,9 @@ void homeZAxis() {
   zStepper.setSpeed(-500);  // Slow speed in negative direction
   
   // Keep stepping until home switch is triggered (active HIGH)
-  while (digitalRead(Z_HOME_SWITCH_PIN) == LOW) {
+  while (zHomeSwitch.read() == LOW) {
     zStepper.runSpeed();
+    zHomeSwitch.update();
     yield();  // Allow ESP32 to handle background tasks
   }
   
@@ -70,8 +78,9 @@ void homeXAxis() {
   xStepper.setSpeed(-500);  // Slow speed in negative direction
   
   // Keep stepping until home switch is triggered (active HIGH)
-  while (digitalRead(X_HOME_SWITCH_PIN) == LOW) {
+  while (xHomeSwitch.read() == LOW) {
     xStepper.runSpeed();
+    xHomeSwitch.update();
     yield();  // Allow ESP32 to handle background tasks
   }
   
