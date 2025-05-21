@@ -1,7 +1,7 @@
 #ifndef PICK_CYCLE_H
 #define PICK_CYCLE_H
 
-#include "Constants.h"
+#include "Settings.h"
 #include <Bounce2.h>
 
 //* ************************************************************************

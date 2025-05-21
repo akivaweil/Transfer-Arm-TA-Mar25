@@ -4,7 +4,7 @@
 #include <Bounce2.h>
 
 // Include our custom headers
-#include "../include/Constants.h"
+#include "../include/Settings.h"
 #include "../include/Homing.h"
 #include "../include/Utils.h"
 #include "../include/PickCycle.h"
@@ -34,7 +34,7 @@ void setup() {
   // Configure input pins with debouncers
   pinMode(X_HOME_SWITCH_PIN, INPUT_PULLDOWN);
   xHomeSwitch.attach(X_HOME_SWITCH_PIN);
-  xHomeSwitch.interval(10); // 10ms debounce
+  xHomeSwitch.interval(2); // 10ms debounce
 
   pinMode(Z_HOME_SWITCH_PIN, INPUT_PULLDOWN);
   zHomeSwitch.attach(Z_HOME_SWITCH_PIN);
@@ -53,11 +53,11 @@ void setup() {
   digitalWrite(SOLENOID_RELAY_PIN, LOW);     // Ensure solenoid is off
   
   // Configure stepper motors
-  xStepper.setMaxSpeed(MAX_SPEED);
-  xStepper.setAcceleration(ACCELERATION);
+  xStepper.setMaxSpeed(X_MAX_SPEED);
+  xStepper.setAcceleration(X_ACCELERATION);
   xStepper.setMinPulseWidth(3);
-  zStepper.setMaxSpeed(MAX_SPEED);
-  zStepper.setAcceleration(ACCELERATION);
+  zStepper.setMaxSpeed(Z_MAX_SPEED);
+  zStepper.setAcceleration(Z_ACCELERATION);
   zStepper.setMinPulseWidth(3);
   
   // Configure servo

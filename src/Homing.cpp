@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
 #include <Bounce2.h>
-#include "../include/Constants.h"
+#include "../include/Settings.h"
 #include "../include/Homing.h"
 
 //* ************************************************************************
@@ -52,7 +52,7 @@ void homeZAxis() {
   Serial.println("Homing Z axis...");
   
   // Move towards home switch
-  zStepper.setSpeed(-500);  // Slow speed in negative direction
+  zStepper.setSpeed(-Z_HOME_SPEED);  // Slow speed in negative direction
   
   // Keep stepping until home switch is triggered (active HIGH)
   while (zHomeSwitch.read() == LOW) {
@@ -73,9 +73,43 @@ void homeZAxis() {
 // Home the X axis
 void homeXAxis() {
   Serial.println("Homing X axis...");
+  Serial.print("Initial home switch state: ");
+  Serial.println(xHomeSwitch.read() ? "HIGH" : "LOW");
+  
+  // Check if X home switch is already activated
+  xHomeSwitch.update();
+  if (xHomeSwitch.read() == HIGH) {
+    Serial.println("X home switch already triggered. Setting position as home.");
+    xStepper.stop();
+    xStepper.setCurrentPosition(X_HOME_POS);
+    
+    // Move away from the switch a small amount to prevent future issues
+    Serial.println("Moving away from the switch slightly...");
+    xStepper.setSpeed(X_HOME_SPEED);  // Positive direction (away from home)
+    
+    // Step until switch is released or max steps reached
+    int safetyCounter = 0;
+    xHomeSwitch.update();
+    while (xHomeSwitch.read() == HIGH && safetyCounter < 200) {
+      xStepper.runSpeed();
+      xHomeSwitch.update();
+      safetyCounter++;
+      yield();
+    }
+    
+    // Stop and set position to a small positive value
+    xStepper.stop();
+    xStepper.setCurrentPosition(50); // Small offset from home
+    Serial.print("Backed off from switch by ");
+    Serial.print(safetyCounter);
+    Serial.println(" steps");
+    
+    Serial.println("X axis homed");
+    return;
+  }
   
   // Move towards home switch
-  xStepper.setSpeed(-500);  // Slow speed in negative direction
+  xStepper.setSpeed(-X_HOME_SPEED);  // Slow speed in negative direction
   
   // Keep stepping until home switch is triggered (active HIGH)
   while (xHomeSwitch.read() == LOW) {
@@ -89,6 +123,27 @@ void homeXAxis() {
   
   // Set current position as home
   xStepper.setCurrentPosition(X_HOME_POS);
+  
+  // Move away from the switch a small amount
+  Serial.println("Moving away from the switch slightly...");
+  xStepper.setSpeed(X_HOME_SPEED);  // Positive direction (away from home)
+  
+  // Step until switch is released or max steps reached
+  int safetyCounter = 0;
+  xHomeSwitch.update();
+  while (xHomeSwitch.read() == HIGH && safetyCounter < 200) {
+    xStepper.runSpeed();
+    xHomeSwitch.update();
+    safetyCounter++;
+    yield();
+  }
+  
+  // Stop and set position to a small positive value
+  xStepper.stop();
+  xStepper.setCurrentPosition(50); // Small offset from home
+  Serial.print("Backed off from switch by ");
+  Serial.print(safetyCounter);
+  Serial.println(" steps");
   
   Serial.println("X axis homed");
 } 

@@ -2,9 +2,10 @@
 #include <AccelStepper.h>
 #include <ESP32Servo.h>
 #include <Bounce2.h>
-#include "../include/Constants.h"
+#include "../include/Settings.h"
 #include "../include/PickCycle.h"
 #include "../include/Utils.h"
+#include "../include/Homing.h"
 
 /*
 Pick and Place Cycle Steps (Values refer to constants in Constants.h):
@@ -22,9 +23,10 @@ Pick and Place Cycle Steps (Values refer to constants in Constants.h):
 8. Wait After Release: Hold for DROPOFF_HOLD_TIME ms.
 9. Raise Z-axis After Dropoff: Z-axis to Z_UP_POS.
 10. Signal Stage 2: Pulse STAGE2_SIGNAL_PIN HIGH then LOW.
-11. Return to Pickup Position: X-axis to X_PICKUP_POS, Servo to SERVO_PICKUP_POS. Cycle ends, enters WAITING state.
+11. Return to Pickup Position (X-axis to X_PICKUP_POS, Servo to SERVO_PICKUP_POS).
+12. Home X-axis.
+13. Final Move to Pickup Position (X-axis to X_PICKUP_POS). Cycle ends, enters WAITING state.
 */
-
 //* ************************************************************************
 //* ************************* PICK CYCLE LOGIC ***************************
 //* ************************************************************************
@@ -61,9 +63,9 @@ PickCycleState getCurrentState() {
 
 // Update the pick cycle state machine
 void updatePickCycle() {
-  // Check for X-axis reaching midpoint during travel to dropoff
+  // Check for X-axis reaching servo rotation position during travel to dropoff
   if (currentState == MOVE_TO_DROPOFF && !midpointServoRotated) {
-    if (xStepper.currentPosition() >= X_MIDPOINT_POS) {
+    if (xStepper.currentPosition() >= X_SERVO_ROTATE_POS) {
       gripperServo.write(SERVO_DROPOFF_POS);
       midpointServoRotated = true;
     }
@@ -128,7 +130,7 @@ void updatePickCycle() {
       zStepper.moveTo(Z_UP_POS);
       if (zStepper.distanceToGo() == 0) {
         Serial.println("Z-axis raised, moving to dropoff position");
-        midpointServoRotated = false;  // Reset midpoint flag
+        midpointServoRotated = false;  // Reset servo rotation flag
         //! Step 6: Move to Dropoff Position
         currentState = MOVE_TO_DROPOFF;
       }
@@ -193,16 +195,34 @@ void updatePickCycle() {
       digitalWrite(STAGE2_SIGNAL_PIN, HIGH);
       delay(100);  // Brief pulse
       digitalWrite(STAGE2_SIGNAL_PIN, LOW);
-      Serial.println("Stage 2 signaled, returning to pickup position");
-      //! Step 12: Return to Pickup Position
+      Serial.println("Stage 2 signaled, returning to pickup position (pre-homing)");
+      //! Step 11: Return to Pickup Position (pre-homing)
       currentState = RETURN_TO_PICKUP;
       break;
       
-    case RETURN_TO_PICKUP:
-      // Return to pickup position to prepare for next cycle
+    case RETURN_TO_PICKUP: // This state now occurs BEFORE homing
+      // Return to pickup position to prepare for homing
       if (moveToPosition(xStepper, X_PICKUP_POS)) {
         gripperServo.write(SERVO_PICKUP_POS);  // Reset servo to pickup position
-        Serial.println("Returned to pickup position, cycle complete");
+        Serial.println("Returned to pickup position (pre-homing), initiating X-axis homing");
+        //! Step 12: Home X-axis
+        currentState = HOME_X_AXIS;
+      }
+      break;
+      
+    case HOME_X_AXIS:
+      // Home the X-axis
+      homeXAxis(); // This is a blocking call
+      Serial.println("X-axis homed, moving to pickup position (post-homing)");
+      //! Step 13: Final Move to Pickup Position (post-homing)
+      currentState = FINAL_MOVE_TO_PICKUP;
+      break;
+      
+    case FINAL_MOVE_TO_PICKUP: // New state for post-homing move to pickup
+      // Move to pickup position after homing
+      if (moveToPosition(xStepper, X_PICKUP_POS)) {
+        // Servo should already be at SERVO_PICKUP_POS from the RETURN_TO_PICKUP state before homing
+        Serial.println("At pickup position (post-homing), cycle complete");
         //! Cycle Complete: Waiting for next trigger
         currentState = WAITING;
       }

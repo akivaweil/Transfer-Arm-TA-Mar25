@@ -2,13 +2,32 @@
 #include <AccelStepper.h>
 #include "../include/Utils.h"
 
-// Move a stepper to a position and wait for completion
+// Move a stepper to a position and return true when motion is complete
 bool moveToPosition(AccelStepper &stepper, long position) {
-  // Set the target position
-  stepper.moveTo(position);
+  static long lastTarget = -999999;  // Track the last target position
+  static bool motionStarted = false; // Track if motion has started
   
-  // Check if we're already at position
-  return stepper.distanceToGo() == 0;
+  // If this is a new target position or motion hasn't started yet
+  if (position != lastTarget || !motionStarted) {
+    Serial.print("Setting new target position: ");
+    Serial.print(position);
+    Serial.print(", Current pos: ");
+    Serial.println(stepper.currentPosition());
+    
+    // Set the target position
+    stepper.moveTo(position);
+    lastTarget = position;
+    motionStarted = true;
+    return false; // Motion is not complete
+  }
+  
+  // Return true if the motor has reached the target position
+  if (stepper.distanceToGo() == 0) {
+    motionStarted = false; // Reset for next movement
+    return true;  // Motion is complete
+  }
+  
+  return false;  // Motion is still in progress
 }
 
 // Non-blocking delay function
