@@ -30,19 +30,21 @@ const int Z_HOME_POS = 0;            // Z-axis home position (in steps)
 
 // X-axis positions in inches from home
 const int X_PICKUP_POS_INCHES = 1;   // X-axis pickup position (1 inch)
-const int X_DROPOFF_POS_INCHES = 20; // X-axis dropoff position (20 inches)
-const int X_SERVO_ROTATE_INCHES = X_DROPOFF_POS_INCHES - 3; // Start servo rotation 5 inches before dropoff
+const int X_DROPOFF_POS_INCHES = 21.5; // X-axis dropoff position (20 inches)
+const int X_DROPOFF_OVERSHOOT_INCHES = X_DROPOFF_POS_INCHES + 1.75; // 3 inches past dropoff for servo rotation
+const int X_SERVO_ROTATE_INCHES = X_DROPOFF_POS_INCHES - 2; // Start servo rotation 2 inches before dropoff
 const int X_MIDPOINT_INCHES = (X_PICKUP_POS_INCHES + X_DROPOFF_POS_INCHES) / 2; // Midpoint kept for reference
 
 // Z-axis distances in inches
 const int Z_PICKUP_LOWER_INCHES = 7;    // Lower Z-axis by 5 inches for pickup
 const int Z_SUCTION_START_INCHES = 4;   // Start suction when Z is 4 inches down
-const int Z_DROPOFF_LOWER_INCHES = 3;   // Lower Z-axis by 3 inches for dropoff
+const int Z_DROPOFF_LOWER_INCHES = 5.5;   // Lower Z-axis by 5.5 inches for dropoff
 
 // Converted positions to steps
 const int X_PICKUP_POS = X_PICKUP_POS_INCHES * STEPS_PER_INCH;
 const int X_DROPOFF_POS = X_DROPOFF_POS_INCHES * STEPS_PER_INCH;
-const int X_SERVO_ROTATE_POS = X_SERVO_ROTATE_INCHES * STEPS_PER_INCH;
+const int X_DROPOFF_OVERSHOOT_POS = X_DROPOFF_OVERSHOOT_INCHES * STEPS_PER_INCH; // Overshoot position in steps
+const int X_SERVO_ROTATE_POS = X_SERVO_ROTATE_INCHES * STEPS_PER_INCH; // Position to start servo rotation for dropoff
 const int X_MIDPOINT_POS = X_MIDPOINT_INCHES * STEPS_PER_INCH; // Kept for reference
 
 const int Z_UP_POS = 0;                                   // Z-axis fully up position
@@ -53,17 +55,21 @@ const int Z_DROPOFF_POS = Z_DROPOFF_LOWER_INCHES * STEPS_PER_INCH; // Z-axis dow
 // Servo angles
 const int SERVO_HOME_POS = 90;       // Servo home position (in degrees)
 const int SERVO_PICKUP_POS = 10;      // Servo pickup position (in degrees)
-const int SERVO_DROPOFF_POS = 90;    // Servo dropoff position (90 degrees from pickup)
+const int SERVO_TRAVEL_POS = 0;       // Servo position for travel after pickup (in degrees)
+const int SERVO_DROPOFF_POS = 80;    // Servo dropoff position (90 degrees from pickup)
 
 // Timing constants
 const unsigned long PICKUP_HOLD_TIME = 300;   // Hold time at pickup position (300ms)
 const unsigned long DROPOFF_HOLD_TIME = 100;  // Hold time at dropoff position (100ms)
+const unsigned long SERVO_ROTATION_WAIT_TIME = 500; // Wait time for servo to complete rotation at overshoot position (500ms)
 
 // Stepper settings
 const int X_MAX_SPEED = 20000;          // Maximum speed for X-axis in steps per second
 const int X_ACCELERATION = 20000;       // Acceleration for X-axis in steps per second^2
 const int Z_MAX_SPEED = 10000;          // Maximum speed for Z-axis in steps per second
 const int Z_ACCELERATION = 10000;       // Acceleration for Z-axis in steps per second^2
+const int Z_DROPOFF_MAX_SPEED = Z_MAX_SPEED / 1;   // Same speed for now for dropoff
+const int Z_DROPOFF_ACCELERATION = Z_ACCELERATION / 1; // Same acceleration for now for dropoff
 const int X_HOME_SPEED = 1000;          // Homing speed for X-axis in steps per second
 const int Z_HOME_SPEED = 1000;          // Homing speed for Z-axis in steps per second
 
@@ -74,8 +80,10 @@ enum PickCycleState {
   LOWER_Z_FOR_PICKUP,
   WAIT_AT_PICKUP,
   RAISE_Z_WITH_OBJECT,
-  MOVE_TO_DROPOFF,
-  ROTATE_SERVO_MIDPOINT,
+  ROTATE_SERVO_AFTER_PICKUP,
+  MOVE_TO_DROPOFF_OVERSHOOT,
+  WAIT_FOR_SERVO_ROTATION,
+  RETURN_TO_DROPOFF,
   LOWER_Z_FOR_DROPOFF,
   RELEASE_OBJECT,
   WAIT_AFTER_RELEASE,

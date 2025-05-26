@@ -8,24 +8,26 @@
 #include "../include/Homing.h"
 
 /*
-Pick and Place Cycle Steps (Values refer to constants in Constants.h):
+Pick and Place Cycle Steps (Values refer to constants in Settings.h):
 1. Move to Pickup Position: X-axis to X_PICKUP_POS, Servo to SERVO_PICKUP_POS.
 2. Lower Z-axis for Pickup (Continuous, Activate Vacuum during descent):
   - Z-axis moves towards Z_PICKUP_POS.
   - Vacuum (SOLENOID_RELAY_PIN HIGH) activates when Z passes Z_SUCTION_START_POS.
 3. Wait at Pickup: Hold for PICKUP_HOLD_TIME ms.
 4. Raise Z-axis with Object: Z-axis to Z_UP_POS.
-5. Move to Dropoff Position (Rotate servo concurrently):
-  - X-axis to X_DROPOFF_POS.
-  - Servo to SERVO_DROPOFF_POS when X-axis passes X_MIDPOINT_POS.
-6. Lower Z-axis for Dropoff: Z-axis to Z_DROPOFF_POS.
-7. Release Object: Vacuum (SOLENOID_RELAY_PIN LOW).
-8. Wait After Release: Hold for DROPOFF_HOLD_TIME ms.
-9. Raise Z-axis After Dropoff: Z-axis to Z_UP_POS.
-10. Signal Stage 2: Pulse STAGE2_SIGNAL_PIN HIGH then LOW.
-11. Return to Pickup Position (X-axis to X_PICKUP_POS, Servo to SERVO_PICKUP_POS).
-12. Home X-axis.
-13. Final Move to Pickup Position (X-axis to X_PICKUP_POS). Cycle ends, enters WAITING state.
+5. Rotate Servo to Travel Position: Servo to SERVO_TRAVEL_POS.
+6. Move to Dropoff Overshoot Position: X-axis to X_DROPOFF_OVERSHOOT_POS (4 inches past dropoff).
+7. Rotate Servo to Dropoff Position: Servo to SERVO_DROPOFF_POS.
+8. Wait for Servo Rotation: Hold for SERVO_ROTATION_WAIT_TIME ms (500ms).
+9. Return to Dropoff Position: X-axis to X_DROPOFF_POS.
+10. Lower Z-axis for Dropoff: Z-axis to Z_DROPOFF_POS.
+11. Release Object: Vacuum (SOLENOID_RELAY_PIN LOW).
+12. Wait After Release: Hold for DROPOFF_HOLD_TIME ms.
+13. Raise Z-axis After Dropoff: Z-axis to Z_UP_POS.
+14. Signal Stage 2: Pulse STAGE2_SIGNAL_PIN HIGH then LOW.
+15. Return to Pickup Position (X-axis to X_PICKUP_POS, Servo to SERVO_PICKUP_POS).
+16. Home X-axis.
+17. Final Move to Pickup Position (X-axis to X_PICKUP_POS). Cycle ends, enters WAITING state.
 */
 //* ************************************************************************
 //* ************************* PICK CYCLE LOGIC ***************************
@@ -51,6 +53,10 @@ void initializePickCycle() {
   midpointServoRotated = false;
   vacuumActivatedDuringDescent = false;
   
+  // Initialize Z-axis to normal speed and acceleration
+  zStepper.setMaxSpeed(Z_MAX_SPEED);
+  zStepper.setAcceleration(Z_ACCELERATION);
+  
   // Configure Stage 2 signal pin as output
   pinMode(STAGE2_SIGNAL_PIN, OUTPUT);
   digitalWrite(STAGE2_SIGNAL_PIN, LOW);  // Initialize as LOW
@@ -63,14 +69,6 @@ PickCycleState getCurrentState() {
 
 // Update the pick cycle state machine
 void updatePickCycle() {
-  // Check for X-axis reaching servo rotation position during travel to dropoff
-  if (currentState == MOVE_TO_DROPOFF && !midpointServoRotated) {
-    if (xStepper.currentPosition() >= X_SERVO_ROTATE_POS) {
-      gripperServo.write(SERVO_DROPOFF_POS);
-      midpointServoRotated = true;
-    }
-  }
-
   // State machine for pick cycle
   switch (currentState) {
     case WAITING:
@@ -91,6 +89,9 @@ void updatePickCycle() {
         Serial.print(", Suction Start Z: "); Serial.println(Z_SUCTION_START_POS);
         gripperServo.write(SERVO_PICKUP_POS);  // Set servo to pickup position
         vacuumActivatedDuringDescent = false; // Reset flag
+        // Ensure Z-axis uses normal speed and acceleration for pickup
+        zStepper.setMaxSpeed(Z_MAX_SPEED);
+        zStepper.setAcceleration(Z_ACCELERATION);
         zStepper.moveTo(Z_PICKUP_POS);      // Command Z to move to final pickup position
         //! Step 2: Lower Z-axis for Pickup & Activate Vacuum
         currentState = LOWER_Z_FOR_PICKUP;
@@ -129,35 +130,60 @@ void updatePickCycle() {
       // Raise Z axis with object
       zStepper.moveTo(Z_UP_POS);
       if (zStepper.distanceToGo() == 0) {
-        Serial.println("Z-axis raised, moving to dropoff position");
-        midpointServoRotated = false;  // Reset servo rotation flag
-        //! Step 6: Move to Dropoff Position
-        currentState = MOVE_TO_DROPOFF;
+        Serial.println("Z-axis raised, rotating servo to travel position");
+        midpointServoRotated = false; // Reset for upcoming sequence
+        //! Step 5: Rotate Servo to Travel Position
+        currentState = ROTATE_SERVO_AFTER_PICKUP;
+      }
+      break;
+
+    case ROTATE_SERVO_AFTER_PICKUP:
+      // Rotate servo to travel position after pickup
+      gripperServo.write(SERVO_TRAVEL_POS);
+      // Assuming servo rotation is quick, directly move to next state.
+      // If servo needs time, a timer or check would be needed here.
+      Serial.println("Servo rotated to travel position, moving to dropoff overshoot");
+      //! Step 6: Move to Dropoff Overshoot Position
+      currentState = MOVE_TO_DROPOFF_OVERSHOOT;
+      break;
+      
+    case MOVE_TO_DROPOFF_OVERSHOOT:
+      // Move X axis to overshoot position (4 inches past dropoff)
+      if (moveToPosition(xStepper, X_DROPOFF_OVERSHOOT_POS)) {
+        Serial.println("At dropoff overshoot position, rotating servo to dropoff position");
+        gripperServo.write(SERVO_DROPOFF_POS);
+        stateTimer = 0;
+        //! Step 7: Wait for Servo Rotation
+        currentState = WAIT_FOR_SERVO_ROTATION;
       }
       break;
       
-    case MOVE_TO_DROPOFF:
-      // Move X axis to dropoff position
-      // Note: Servo rotation at midpoint is handled in the main loop
+    case WAIT_FOR_SERVO_ROTATION:
+      // Wait for servo to complete rotation at overshoot position
+      if (Wait(SERVO_ROTATION_WAIT_TIME, &stateTimer)) {
+        Serial.println("Servo rotation complete, returning to dropoff position");
+        //! Step 8: Return to Dropoff Position
+        currentState = RETURN_TO_DROPOFF;
+      }
+      break;
+      
+    case RETURN_TO_DROPOFF:
+      // Move X axis back to normal dropoff position
       if (moveToPosition(xStepper, X_DROPOFF_POS)) {
-        Serial.println("At dropoff position, lowering Z-axis");
-        //! Step 7: Lower Z-axis for Dropoff
+        Serial.println("At dropoff X position, lowering Z-axis");
+        //! Step 9: Lower Z-axis for Dropoff
         currentState = LOWER_Z_FOR_DROPOFF;
       }
       break;
       
-    case ROTATE_SERVO_MIDPOINT:
-      // This state is handled automatically in the main loop
-      // It's included here for clarity in the state machine
-      //! (Handled concurrently with MOVE_TO_DROPOFF)
-      break;
-      
     case LOWER_Z_FOR_DROPOFF:
-      // Lower Z axis for dropoff
+      // Lower Z axis for dropoff at a slower speed
+      zStepper.setMaxSpeed(Z_DROPOFF_MAX_SPEED);       // Set slower speed for dropoff movement
+      zStepper.setAcceleration(Z_DROPOFF_ACCELERATION); // Set slower acceleration for dropoff movement
       zStepper.moveTo(Z_DROPOFF_POS);
       if (zStepper.distanceToGo() == 0) {
         Serial.println("Z-axis lowered for dropoff, releasing object");
-        //! Step 8: Release Object
+        //! Step 10: Release Object
         currentState = RELEASE_OBJECT;
       }
       break;
@@ -167,7 +193,7 @@ void updatePickCycle() {
       digitalWrite(SOLENOID_RELAY_PIN, LOW);
       Serial.println("Object released, waiting briefly");
       stateTimer = 0;
-      //! Step 9: Wait After Release
+      //! Step 11: Wait After Release
       currentState = WAIT_AFTER_RELEASE;
       break;
       
@@ -175,7 +201,10 @@ void updatePickCycle() {
       // Wait briefly after release
       if (Wait(DROPOFF_HOLD_TIME, &stateTimer)) {
         Serial.println("Wait complete, raising Z-axis");
-        //! Step 10: Raise Z-axis After Dropoff
+        // Restore normal Z-axis speed and acceleration for upward movement
+        zStepper.setMaxSpeed(Z_MAX_SPEED);
+        zStepper.setAcceleration(Z_ACCELERATION);
+        //! Step 12: Raise Z-axis After Dropoff
         currentState = RAISE_Z_AFTER_DROPOFF;
       }
       break;
@@ -185,7 +214,7 @@ void updatePickCycle() {
       zStepper.moveTo(Z_UP_POS);
       if (zStepper.distanceToGo() == 0) {
         Serial.println("Z-axis raised, signaling Stage 2");
-        //! Step 11: Signal Stage 2
+        //! Step 13: Signal Stage 2
         currentState = SIGNAL_STAGE2;
       }
       break;
@@ -196,7 +225,7 @@ void updatePickCycle() {
       delay(100);  // Brief pulse
       digitalWrite(STAGE2_SIGNAL_PIN, LOW);
       Serial.println("Stage 2 signaled, returning to pickup position (pre-homing)");
-      //! Step 11: Return to Pickup Position (pre-homing)
+      //! Step 14: Return to Pickup Position (pre-homing)
       currentState = RETURN_TO_PICKUP;
       break;
       
@@ -205,7 +234,7 @@ void updatePickCycle() {
       if (moveToPosition(xStepper, X_PICKUP_POS)) {
         gripperServo.write(SERVO_PICKUP_POS);  // Reset servo to pickup position
         Serial.println("Returned to pickup position (pre-homing), initiating X-axis homing");
-        //! Step 12: Home X-axis
+        //! Step 15: Home X-axis
         currentState = HOME_X_AXIS;
       }
       break;
@@ -214,7 +243,7 @@ void updatePickCycle() {
       // Home the X-axis
       homeXAxis(); // This is a blocking call
       Serial.println("X-axis homed, moving to pickup position (post-homing)");
-      //! Step 13: Final Move to Pickup Position (post-homing)
+      //! Step 16: Final Move to Pickup Position (post-homing)
       currentState = FINAL_MOVE_TO_PICKUP;
       break;
       

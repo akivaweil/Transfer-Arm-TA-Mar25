@@ -34,11 +34,11 @@ void setup() {
   // Configure input pins with debouncers
   pinMode(X_HOME_SWITCH_PIN, INPUT_PULLDOWN);
   xHomeSwitch.attach(X_HOME_SWITCH_PIN);
-  xHomeSwitch.interval(2); // 10ms debounce
+  xHomeSwitch.interval(2); // 2ms debounce
 
   pinMode(Z_HOME_SWITCH_PIN, INPUT_PULLDOWN);
   zHomeSwitch.attach(Z_HOME_SWITCH_PIN);
-  zHomeSwitch.interval(2); // 10ms debounce
+  zHomeSwitch.interval(2); // 2ms debounce
 
   pinMode(START_BUTTON_PIN, INPUT_PULLDOWN);
   startButton.attach(START_BUTTON_PIN);
