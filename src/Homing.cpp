@@ -3,6 +3,7 @@
 #include <Bounce2.h>
 #include "../include/Settings.h"
 #include "../include/Homing.h"
+#include "../include/Utils.h"
 
 //* ************************************************************************
 //* **************************** HOMING LOGIC ******************************
@@ -14,9 +15,14 @@
 extern AccelStepper xStepper;
 extern AccelStepper zStepper;
 
+// External references to bounce objects defined in main file
+extern Bounce xHomeSwitch;
+extern Bounce zHomeSwitch;
+
 // Main homing sequence that coordinates all axes according to the specified sequence
 void homeSystem() {
   Serial.println("Starting homing sequence...");
+  enableXMotor();  // Enable X-axis motor for homing
   
   // 1. Home Z axis first
   homeZAxis();
@@ -44,6 +50,7 @@ void homeSystem() {
     yield();
   }
   
+  disableXMotor();  // Disable X-axis motor after homing
   Serial.println("Homing sequence completed");
 }
 
@@ -73,6 +80,7 @@ void homeZAxis() {
 // Home the X axis
 void homeXAxis() {
   Serial.println("Homing X axis...");
+  enableXMotor();  // Enable X-axis motor for homing
   Serial.print("Initial home switch state: ");
   Serial.println(xHomeSwitch.read() ? "HIGH" : "LOW");
   

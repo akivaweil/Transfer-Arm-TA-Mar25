@@ -52,6 +52,9 @@ void setup() {
   pinMode(SOLENOID_RELAY_PIN, OUTPUT);
   digitalWrite(SOLENOID_RELAY_PIN, LOW);     // Ensure solenoid is off
   
+  pinMode(X_ENABLE_PIN, OUTPUT);
+  digitalWrite(X_ENABLE_PIN, HIGH);          // Start with X-axis motor disabled (active low enable)
+  
   // Configure stepper motors
   xStepper.setMaxSpeed(X_MAX_SPEED);
   xStepper.setAcceleration(X_ACCELERATION);

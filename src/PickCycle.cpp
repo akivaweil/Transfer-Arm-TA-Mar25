@@ -75,6 +75,7 @@ void updatePickCycle() {
       // Check for pick cycle trigger
       if (startButton.read() == HIGH || stage1Signal.read() == HIGH) {
         Serial.println("Pick Cycle Triggered");
+        enableXMotor();  // Enable X-axis motor for pick cycle
         //! Step 1: Move to Pickup Position
         currentState = MOVE_TO_PICKUP;
         stateTimer = 0;
@@ -252,6 +253,7 @@ void updatePickCycle() {
       if (moveToPosition(xStepper, X_PICKUP_POS)) {
         // Servo should already be at SERVO_PICKUP_POS from the RETURN_TO_PICKUP state before homing
         Serial.println("At pickup position (post-homing), cycle complete");
+        disableXMotor();  // Disable X-axis motor after cycle completion
         //! Cycle Complete: Waiting for next trigger
         currentState = WAITING;
       }

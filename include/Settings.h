@@ -11,6 +11,7 @@ const int Z_HOME_SWITCH_PIN = 13;    // Z-axis home limit switch (active high)
 // Outputs
 const int X_STEP_PIN = 27;           // X-axis stepper motor step pin
 const int X_DIR_PIN = 14;            // X-axis stepper motor direction pin
+const int X_ENABLE_PIN = 4;          // X-axis stepper motor enable pin (active low)
 const int Z_STEP_PIN = 19;           // Z-axis stepper motor step pin
 const int Z_DIR_PIN = 18;            // Z-axis stepper motor direction pin
 const int SERVO_PIN = 26;            // Servo control pin
@@ -31,7 +32,7 @@ const int Z_HOME_POS = 0;            // Z-axis home position (in steps)
 // X-axis positions in inches from home
 const int X_PICKUP_POS_INCHES = 1;   // X-axis pickup position (1 inch)
 const int X_DROPOFF_POS_INCHES = 21.5; // X-axis dropoff position (20 inches)
-const int X_DROPOFF_OVERSHOOT_INCHES = X_DROPOFF_POS_INCHES + 1.75; // 3 inches past dropoff for servo rotation
+const int X_DROPOFF_OVERSHOOT_INCHES = X_DROPOFF_POS_INCHES + 2.75; // 3 inches past dropoff for servo rotation
 const int X_SERVO_ROTATE_INCHES = X_DROPOFF_POS_INCHES - 2; // Start servo rotation 2 inches before dropoff
 const int X_MIDPOINT_INCHES = (X_PICKUP_POS_INCHES + X_DROPOFF_POS_INCHES) / 2; // Midpoint kept for reference
 
@@ -64,10 +65,10 @@ const unsigned long DROPOFF_HOLD_TIME = 100;  // Hold time at dropoff position (
 const unsigned long SERVO_ROTATION_WAIT_TIME = 500; // Wait time for servo to complete rotation at overshoot position (500ms)
 
 // Stepper settings
-const int X_MAX_SPEED = 20000;          // Maximum speed for X-axis in steps per second
-const int X_ACCELERATION = 20000;       // Acceleration for X-axis in steps per second^2
+const int X_MAX_SPEED = 12000;          // Maximum speed for X-axis in steps per second
+const int X_ACCELERATION = 15000;       // Acceleration for X-axis in steps per second^2
 const int Z_MAX_SPEED = 10000;          // Maximum speed for Z-axis in steps per second
-const int Z_ACCELERATION = 10000;       // Acceleration for Z-axis in steps per second^2
+const int Z_ACCELERATION = 8500;       // Acceleration for Z-axis in steps per second^2
 const int Z_DROPOFF_MAX_SPEED = Z_MAX_SPEED / 1;   // Same speed for now for dropoff
 const int Z_DROPOFF_ACCELERATION = Z_ACCELERATION / 1; // Same acceleration for now for dropoff
 const int X_HOME_SPEED = 1000;          // Homing speed for X-axis in steps per second
