@@ -20,6 +20,8 @@ class TransferArm {
   AccelStepper xStepper;
   AccelStepper zStepper;
   Servo gripperServo;
+  int currentServoPosition;  // Track servo position since ESP32Servo doesn't
+                             // have read()
 
   // Bounce objects for debouncing
   Bounce xHomeSwitch;
@@ -50,6 +52,20 @@ class TransferArm {
   Bounce& getZHomeSwitch() { return zHomeSwitch; }
   Bounce& getStartButton() { return startButton; }
   Bounce& getStage1Signal() { return stage1Signal; }
+
+  // Servo position tracking
+  int getCurrentServoPosition() { return currentServoPosition; }
+  void setServoPosition(int angle) {
+    gripperServo.write(angle);
+    currentServoPosition = angle;
+  }
+
+  // Movement status
+  bool isXMoving() { return xStepper.isRunning(); }
+  bool isZMoving() { return zStepper.isRunning(); }
+  bool isAnyMotorMoving() {
+    return xStepper.isRunning() || zStepper.isRunning();
+  }
 };
 
 // Global instance declaration

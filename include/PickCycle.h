@@ -19,4 +19,9 @@ void initializePickCycle();
 void updatePickCycle();
 PickCycleState getCurrentState();
 
+// Additional functions for web control
+void setCurrentState(PickCycleState newState);
+void triggerPickCycleFromWeb();
+const char* getStateString(PickCycleState state);
+
 #endif  // PICK_CYCLE_H

@@ -3,11 +3,11 @@
 #include "../include/TransferArm.h"
 
 //* ************************************************************************
-//* *************************** MAIN ENTRY POINT ***********************
+//* *************************** MAIN PROGRAM *****************************
 //* ************************************************************************
-// This file contains the main Arduino setup() and loop() functions.
-// It initializes and updates the Transfer Arm system using the TransferArm
-// class.
+// This is the main entry point for the Transfer Arm system.
+// It initializes the TransferArm class which handles all hardware,
+// state machines, and web server functionality.
 
 // Arduino setup function - runs once at startup
 void setup() {

@@ -70,6 +70,64 @@ void initializePickCycle() {
 // Get the current state
 PickCycleState getCurrentState() { return currentState; }
 
+// Set the current state (for web control)
+void setCurrentState(PickCycleState newState) {
+  currentState = newState;
+  stateTimer = 0;
+  midpointServoRotated = false;
+  vacuumActivatedDuringDescent = false;
+}
+
+// Trigger pick cycle from web interface
+void triggerPickCycleFromWeb() {
+  if (currentState == WAITING) {
+    currentState = MOVE_TO_PICKUP;
+    stateTimer = 0;
+  }
+}
+
+// Get state as string for web interface
+const char* getStateString(PickCycleState state) {
+  switch (state) {
+    case WAITING:
+      return "WAITING";
+    case MOVE_TO_PICKUP:
+      return "MOVE_TO_PICKUP";
+    case LOWER_Z_FOR_PICKUP:
+      return "LOWER_Z_FOR_PICKUP";
+    case WAIT_AT_PICKUP:
+      return "WAIT_AT_PICKUP";
+    case RAISE_Z_WITH_OBJECT:
+      return "RAISE_Z_WITH_OBJECT";
+    case ROTATE_SERVO_AFTER_PICKUP:
+      return "ROTATE_SERVO_AFTER_PICKUP";
+    case MOVE_TO_DROPOFF_OVERSHOOT:
+      return "MOVE_TO_DROPOFF_OVERSHOOT";
+    case WAIT_FOR_SERVO_ROTATION:
+      return "WAIT_FOR_SERVO_ROTATION";
+    case RETURN_TO_DROPOFF:
+      return "RETURN_TO_DROPOFF";
+    case LOWER_Z_FOR_DROPOFF:
+      return "LOWER_Z_FOR_DROPOFF";
+    case RELEASE_OBJECT:
+      return "RELEASE_OBJECT";
+    case WAIT_AFTER_RELEASE:
+      return "WAIT_AFTER_RELEASE";
+    case RAISE_Z_AFTER_DROPOFF:
+      return "RAISE_Z_AFTER_DROPOFF";
+    case SIGNAL_STAGE2:
+      return "SIGNAL_STAGE2";
+    case RETURN_TO_PICKUP:
+      return "RETURN_TO_PICKUP";
+    case HOME_X_AXIS:
+      return "HOME_X_AXIS";
+    case FINAL_MOVE_TO_PICKUP:
+      return "FINAL_MOVE_TO_PICKUP";
+    default:
+      return "UNKNOWN";
+  }
+}
+
 // Update the pick cycle state machine
 void updatePickCycle() {
   // State machine for pick cycle
@@ -93,7 +151,7 @@ void updatePickCycle() {
         Serial.print(Z_PICKUP_POS);
         Serial.print(", Suction Start Z: ");
         Serial.println(Z_SUCTION_START_POS);
-        transferArm.getGripperServo().write(
+        transferArm.setServoPosition(
             SERVO_PICKUP_POS);                 // Set servo to pickup position
         vacuumActivatedDuringDescent = false;  // Reset flag
         // Ensure Z-axis uses normal speed and acceleration for pickup
@@ -150,7 +208,7 @@ void updatePickCycle() {
 
     case ROTATE_SERVO_AFTER_PICKUP:
       // Rotate servo to travel position after pickup
-      transferArm.getGripperServo().write(SERVO_TRAVEL_POS);
+      transferArm.setServoPosition(SERVO_TRAVEL_POS);
       // Assuming servo rotation is quick, directly move to next state.
       // If servo needs time, a timer or check would be needed here.
       Serial.println(
@@ -165,7 +223,7 @@ void updatePickCycle() {
         Serial.println(
             "At dropoff overshoot position, rotating servo to dropoff "
             "position");
-        transferArm.getGripperServo().write(SERVO_DROPOFF_POS);
+        transferArm.setServoPosition(SERVO_DROPOFF_POS);
         stateTimer = 0;
         //! Step 7: Wait for Servo Rotation
         currentState = WAIT_FOR_SERVO_ROTATION;
@@ -251,7 +309,7 @@ void updatePickCycle() {
     case RETURN_TO_PICKUP:  // This state now occurs BEFORE homing
       // Return to pickup position to prepare for homing
       if (moveToPosition(transferArm.getXStepper(), X_PICKUP_POS)) {
-        transferArm.getGripperServo().write(
+        transferArm.setServoPosition(
             SERVO_PICKUP_POS);  // Reset servo to pickup position
         Serial.println(
             "Returned to pickup position (pre-homing), initiating X-axis "

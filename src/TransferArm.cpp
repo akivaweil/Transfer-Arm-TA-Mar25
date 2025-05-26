@@ -9,6 +9,7 @@
 #include "../include/Settings.h"
 #include "../include/TransferArm.h"
 #include "../include/Utils.h"
+#include "../include/WebServer.h"
 
 //* ************************************************************************
 //* ************************ TRANSFER ARM CLASS *************************
@@ -41,6 +42,9 @@ void TransferArm::begin() {
   // Initialize pick cycle state machine
   initializePickCycle();
 
+  // Initialize web server
+  webServer.begin();
+
   // Home the system (automatic on startup - no user input required)
   homeSystem();
 
@@ -55,12 +59,30 @@ void TransferArm::update() {
   startButton.update();
   stage1Signal.update();
 
+  // Track movement completion for position updates
+  static bool xWasMoving = false;
+  static bool zWasMoving = false;
+
+  bool xCurrentlyMoving = xStepper.isRunning();
+  bool zCurrentlyMoving = zStepper.isRunning();
+
   // Update steppers
   xStepper.run();
   zStepper.run();
 
+  // Check for movement completion and notify web server
+  if ((xWasMoving && !xCurrentlyMoving) || (zWasMoving && !zCurrentlyMoving)) {
+    webServer.onMovementComplete();
+  }
+
+  xWasMoving = xCurrentlyMoving;
+  zWasMoving = zCurrentlyMoving;
+
   // Update the pick cycle state machine
   updatePickCycle();
+
+  // Update web server
+  webServer.update();
 }
 
 // Configure input and output pins
@@ -106,4 +128,5 @@ void TransferArm::configureSteppers() {
 void TransferArm::configureServo() {
   gripperServo.attach(SERVO_PIN);
   gripperServo.write(SERVO_HOME_POS);
+  currentServoPosition = SERVO_HOME_POS;
 }
