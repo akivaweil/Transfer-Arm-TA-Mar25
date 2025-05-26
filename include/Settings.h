@@ -31,6 +31,7 @@ const int Z_HOME_POS = 0;            // Z-axis home position (in steps)
 
 // X-axis positions in inches from home
 const int X_PICKUP_POS_INCHES = 1;   // X-axis pickup position (1 inch)
+const int X_WAIT_POS_INCHES = X_PICKUP_POS_INCHES + 3;  // X-axis waiting position (pickup + 3 inches)
 const int X_DROPOFF_POS_INCHES = 21.5; // X-axis dropoff position (20 inches)
 const int X_DROPOFF_OVERSHOOT_INCHES = X_DROPOFF_POS_INCHES + 2.75; // 3 inches past dropoff for servo rotation
 const int X_SERVO_ROTATE_INCHES = X_DROPOFF_POS_INCHES - 2; // Start servo rotation 2 inches before dropoff
@@ -43,6 +44,7 @@ const int Z_DROPOFF_LOWER_INCHES = 5.5;   // Lower Z-axis by 5.5 inches for drop
 
 // Converted positions to steps
 const int X_PICKUP_POS = X_PICKUP_POS_INCHES * STEPS_PER_INCH;
+const int X_WAIT_POS = X_WAIT_POS_INCHES * STEPS_PER_INCH;  // X-axis waiting position in steps
 const int X_DROPOFF_POS = X_DROPOFF_POS_INCHES * STEPS_PER_INCH;
 const int X_DROPOFF_OVERSHOOT_POS = X_DROPOFF_OVERSHOOT_INCHES * STEPS_PER_INCH; // Overshoot position in steps
 const int X_SERVO_ROTATE_POS = X_SERVO_ROTATE_INCHES * STEPS_PER_INCH; // Position to start servo rotation for dropoff

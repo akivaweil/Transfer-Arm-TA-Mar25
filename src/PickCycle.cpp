@@ -83,19 +83,20 @@ void updatePickCycle() {
       break;
       
     case MOVE_TO_PICKUP:
-      // Ensure we're at the pickup position on X-axis
+      // Move from waiting position (X+3) to pickup position (X+0)
       if (moveToPosition(xStepper, X_PICKUP_POS)) {
-        Serial.println("At X pickup position. Lowering Z to pickup.");
+        Serial.println("At X pickup position. Z already at pickup height from waiting.");
         Serial.print("Target Z: "); Serial.print(Z_PICKUP_POS);
         Serial.print(", Suction Start Z: "); Serial.println(Z_SUCTION_START_POS);
-        gripperServo.write(SERVO_PICKUP_POS);  // Set servo to pickup position
+        gripperServo.write(SERVO_PICKUP_POS);  // Ensure servo is at pickup position
         vacuumActivatedDuringDescent = false; // Reset flag
-        // Ensure Z-axis uses normal speed and acceleration for pickup
-        zStepper.setMaxSpeed(Z_MAX_SPEED);
-        zStepper.setAcceleration(Z_ACCELERATION);
-        zStepper.moveTo(Z_PICKUP_POS);      // Command Z to move to final pickup position
-        //! Step 2: Lower Z-axis for Pickup & Activate Vacuum
-        currentState = LOWER_Z_FOR_PICKUP;
+        // Since Z is already at pickup height, activate vacuum and go directly to wait
+        digitalWrite(SOLENOID_RELAY_PIN, HIGH);
+        vacuumActivatedDuringDescent = true;
+        Serial.println("Z already at pickup position, vacuum activated, starting pickup wait");
+        stateTimer = 0; // Reset timer for the wait state
+        //! Step 3: Wait at Pickup (Z already positioned, vacuum on)
+        currentState = WAIT_AT_PICKUP;
       }
       break;
       
@@ -248,14 +249,26 @@ void updatePickCycle() {
       currentState = FINAL_MOVE_TO_PICKUP;
       break;
       
-    case FINAL_MOVE_TO_PICKUP: // New state for post-homing move to pickup
-      // Move to pickup position after homing
-      if (moveToPosition(xStepper, X_PICKUP_POS)) {
-        // Servo should already be at SERVO_PICKUP_POS from the RETURN_TO_PICKUP state before homing
-        Serial.println("At pickup position (post-homing), cycle complete");
-        disableXMotor();  // Disable X-axis motor after cycle completion
-        //! Cycle Complete: Waiting for next trigger
-        currentState = WAITING;
+    case FINAL_MOVE_TO_PICKUP: // New state for post-homing move to waiting position
+      // Restore normal Z-axis speed and acceleration first
+      zStepper.setMaxSpeed(Z_MAX_SPEED);
+      zStepper.setAcceleration(Z_ACCELERATION);
+      
+      // Move to waiting position after homing (pickup + 3 inches)
+      if (moveToPosition(xStepper, X_WAIT_POS)) {
+        // Check if Z is already at pickup position
+        if (zStepper.currentPosition() == Z_PICKUP_POS) {
+          // Z is already at pickup position, complete the cycle
+          gripperServo.write(SERVO_PICKUP_POS);
+          Serial.println("At waiting position (pickup+3, Z at pickup height), cycle complete");
+          disableXMotor();  // Disable X-axis motor after cycle completion
+          //! Cycle Complete: Waiting for next trigger
+          currentState = WAITING;
+        } else {
+          // Z needs to move to pickup position - no serial logs for this movement
+          zStepper.moveTo(Z_PICKUP_POS);
+          // Note: Will check completion on next loop iteration
+        }
       }
       break;
   }

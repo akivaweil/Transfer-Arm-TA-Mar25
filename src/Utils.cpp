@@ -10,10 +10,6 @@ bool moveToPosition(AccelStepper &stepper, long position) {
   
   // If this is a new target position or motion hasn't started yet
   if (position != lastTarget || !motionStarted) {
-    Serial.print("Setting new target position: ");
-    Serial.print(position);
-    Serial.print(", Current pos: ");
-    Serial.println(stepper.currentPosition());
     
     // Set the target position
     stepper.moveTo(position);

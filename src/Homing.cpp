@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
+#include <ESP32Servo.h>
 #include <Bounce2.h>
 #include "../include/Settings.h"
 #include "../include/Homing.h"
@@ -15,6 +16,9 @@
 extern AccelStepper xStepper;
 extern AccelStepper zStepper;
 
+// External reference to servo defined in main file
+extern Servo gripperServo;
+
 // External references to bounce objects defined in main file
 extern Bounce xHomeSwitch;
 extern Bounce zHomeSwitch;
@@ -27,8 +31,8 @@ void homeSystem() {
   // 1. Home Z axis first
   homeZAxis();
   
-  // 2. Move Z axis up 5 inches
-  Serial.println("Moving Z-axis up 5 inches from home...");
+  // 2. Move Z axis up to fully retracted position
+  Serial.println("Moving Z-axis up to fully retracted position...");
   zStepper.moveTo(Z_UP_POS);
   
   // Wait for Z movement to complete
@@ -40,9 +44,9 @@ void homeSystem() {
   // 3. Home X axis
   homeXAxis();
   
-  // 4. Move X axis to pickup position
-  Serial.println("Moving X-axis to pickup position...");
-  xStepper.moveTo(X_PICKUP_POS);
+  // 4. Move X axis to waiting position (pickup + 3 inches)
+  Serial.println("Moving X-axis to waiting position (pickup + 3 inches)...");
+  xStepper.moveTo(X_WAIT_POS);
   
   // Wait for X movement to complete
   while (xStepper.distanceToGo() != 0) {
@@ -50,8 +54,22 @@ void homeSystem() {
     yield();
   }
   
+  // 5. Move Z axis to pickup height for waiting
+  Serial.println("Moving Z-axis to pickup height for waiting...");
+  zStepper.moveTo(Z_PICKUP_POS);
+  
+  // Wait for Z movement to complete
+  while (zStepper.distanceToGo() != 0) {
+    zStepper.run();
+    yield();
+  }
+  
+  // 6. Set servo to pickup position for waiting
+  Serial.println("Setting servo to pickup position...");
+  gripperServo.write(SERVO_PICKUP_POS);
+  
   disableXMotor();  // Disable X-axis motor after homing
-  Serial.println("Homing sequence completed");
+  Serial.println("Homing sequence completed - positioned at waiting location with servo ready");
 }
 
 // Home the Z axis
@@ -73,6 +91,10 @@ void homeZAxis() {
   
   // Set current position as home
   zStepper.setCurrentPosition(Z_HOME_POS);
+  
+  // Restore normal Z-axis speed and acceleration after homing
+  zStepper.setMaxSpeed(Z_MAX_SPEED);
+  zStepper.setAcceleration(Z_ACCELERATION);
   
   Serial.println("Z axis homed");
 }
@@ -108,6 +130,11 @@ void homeXAxis() {
     // Stop and set position to a small positive value
     xStepper.stop();
     xStepper.setCurrentPosition(50); // Small offset from home
+    
+    // Restore normal X-axis speed and acceleration after homing
+    xStepper.setMaxSpeed(X_MAX_SPEED);
+    xStepper.setAcceleration(X_ACCELERATION);
+    
     Serial.print("Backed off from switch by ");
     Serial.print(safetyCounter);
     Serial.println(" steps");
@@ -149,6 +176,11 @@ void homeXAxis() {
   // Stop and set position to a small positive value
   xStepper.stop();
   xStepper.setCurrentPosition(50); // Small offset from home
+  
+  // Restore normal X-axis speed and acceleration after homing
+  xStepper.setMaxSpeed(X_MAX_SPEED);
+  xStepper.setAcceleration(X_ACCELERATION);
+  
   Serial.print("Backed off from switch by ");
   Serial.print(safetyCounter);
   Serial.println(" steps");
