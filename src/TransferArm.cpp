@@ -1,5 +1,6 @@
 #include <AccelStepper.h>
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <Bounce2.h>
 #include <ESP32Servo.h>
 
@@ -58,6 +59,15 @@ void TransferArm::update() {
   zHomeSwitch.update();
   startButton.update();
   stage1Signal.update();
+
+  // Handle serial communication
+  if (Serial.available()) {
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+    if (command.length() > 0) {
+      handleSerialCommand(command);
+    }
+  }
 
   // Track movement completion for position updates
   static bool xWasMoving = false;
@@ -129,4 +139,61 @@ void TransferArm::configureServo() {
   gripperServo.attach(SERVO_PIN);
   gripperServo.write(SERVO_HOME_POS);
   currentServoPosition = SERVO_HOME_POS;
+}
+
+// Handle serial commands
+void TransferArm::handleSerialCommand(const String& command) {
+  // Check for JSON commands first
+  if (command.startsWith("{")) {
+    DynamicJsonDocument doc(256);
+    DeserializationError error = deserializeJson(doc, command);
+
+    if (!error) {
+      if (doc.containsKey("command") &&
+          doc["command"].as<String>() == "identify") {
+        // Send board identification
+        DynamicJsonDocument response(128);
+        response["board_id"] = BOARD_ID;
+        response["description"] = BOARD_DESCRIPTION;
+        response["type"] = "TRANSFER_ARM";
+
+        String jsonResponse;
+        serializeJson(response, jsonResponse);
+        sendSerialMessage(jsonResponse);
+        return;
+      }
+    }
+  }
+
+  // Handle plain text commands
+  if (command == "identify") {
+    // Plain text identification response
+    sendSerialMessage("BOARD_ID:" + String(BOARD_ID));
+  } else if (command == "status") {
+    Serial.println("Transfer Arm Status:");
+    Serial.println("- X Position: " + String(xStepper.currentPosition()));
+    Serial.println("- Z Position: " + String(zStepper.currentPosition()));
+    Serial.println("- Servo Position: " + String(currentServoPosition));
+    Serial.println("- X Moving: " + String(isXMoving() ? "Yes" : "No"));
+    Serial.println("- Z Moving: " + String(isZMoving() ? "Yes" : "No"));
+  } else if (command == "help") {
+    Serial.println("Available Commands:");
+    Serial.println("- identify: Send board identification");
+    Serial.println("- status: Show system status");
+    Serial.println("- help: Show this help message");
+  } else {
+    Serial.println("Unknown command: " + command +
+                   ". Type 'help' for available commands.");
+  }
+}
+
+// Send serial message
+void TransferArm::sendSerialMessage(const String& message) {
+  Serial.println(message);
+}
+
+// Send burst request to Raspberry Pi
+void TransferArm::sendBurstRequest() {
+  Serial.println("Sending burst request to Raspberry Pi...");
+  sendSerialMessage("{\"command\":\"burst\"}");
 }

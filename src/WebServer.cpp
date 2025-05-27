@@ -1158,3 +1158,17 @@ void TransferArmWebServer::onMovementComplete() {
   serializeJson(logDoc, logMessage);
   webSocket.textAll(logMessage);
 }
+
+// Logging Methods
+void TransferArmWebServer::sendLogMessage(const String &message) {
+  JsonDocument logDoc;
+  logDoc["type"] = "log";
+  logDoc["message"] = message;
+  String logMessage;
+  serializeJson(logDoc, logMessage);
+  webSocket.textAll(logMessage);
+}
+
+bool TransferArmWebServer::hasConnectedClients() {
+  return webSocket.count() > 0;
+}

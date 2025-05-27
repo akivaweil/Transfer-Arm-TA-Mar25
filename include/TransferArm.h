@@ -66,6 +66,11 @@ class TransferArm {
   bool isAnyMotorMoving() {
     return xStepper.isRunning() || zStepper.isRunning();
   }
+
+  // Serial communication methods
+  void handleSerialCommand(const String& command);
+  void sendSerialMessage(const String& message);
+  void sendBurstRequest();
 };
 
 // Global instance declaration

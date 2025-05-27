@@ -2,9 +2,14 @@
 #define UTILS_H
 
 #include <AccelStepper.h>
+#include <Arduino.h>
 
 // Function declarations
-bool moveToPosition(AccelStepper &stepper, long position);
+bool moveToPosition(AccelStepper& stepper, long position);
 bool Wait(unsigned long delayTime, unsigned long* startTimePtr);
 
-#endif // UTILS_H 
+// Smart logging function - routes to WebSocket if clients connected, otherwise
+// to Serial
+void smartLog(const String& message);
+
+#endif  // UTILS_H

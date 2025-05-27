@@ -2,6 +2,10 @@
 
 #include "../include/TransferArm.h"
 
+// Global variable definitions
+const char* BOARD_ID = "TRANSFER_ARM_001";
+const char* BOARD_DESCRIPTION = "Transfer Arm Controller";
+
 //* ************************************************************************
 //* *************************** MAIN PROGRAM *****************************
 //* ************************************************************************

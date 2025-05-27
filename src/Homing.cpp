@@ -6,6 +6,7 @@
 
 #include "../include/Settings.h"
 #include "../include/TransferArm.h"
+#include "../include/Utils.h"
 
 //* ************************************************************************
 //* **************************** HOMING LOGIC ******************************
@@ -16,13 +17,13 @@
 // Main homing sequence that coordinates all axes according to the specified
 // sequence
 void homeSystem() {
-  Serial.println("Starting homing sequence...");
+  smartLog("Starting homing sequence...");
 
   // 1. Home Z axis first
   homeZAxis();
 
   // 2. Move Z axis up 5 inches
-  Serial.println("Moving Z-axis up 5 inches from home...");
+  smartLog("Moving Z-axis up 5 inches from home...");
   transferArm.getZStepper().moveTo(Z_UP_POS);
 
   // Wait for Z movement to complete
@@ -35,7 +36,7 @@ void homeSystem() {
   homeXAxis();
 
   // 4. Move X axis to pickup position
-  Serial.println("Moving X-axis to pickup position...");
+  smartLog("Moving X-axis to pickup position...");
   transferArm.getXStepper().moveTo(X_PICKUP_POS);
 
   // Wait for X movement to complete
@@ -44,12 +45,12 @@ void homeSystem() {
     yield();
   }
 
-  Serial.println("Homing sequence completed");
+  smartLog("Homing sequence completed");
 }
 
 // Home the Z axis
 void homeZAxis() {
-  Serial.println("Homing Z axis...");
+  smartLog("Homing Z axis...");
 
   // Move towards home switch
   transferArm.getZStepper().setSpeed(
@@ -68,25 +69,24 @@ void homeZAxis() {
   // Set current position as home
   transferArm.getZStepper().setCurrentPosition(Z_HOME_POS);
 
-  Serial.println("Z axis homed");
+  smartLog("Z axis homed");
 }
 
 // Home the X axis
 void homeXAxis() {
-  Serial.println("Homing X axis...");
-  Serial.print("Initial home switch state: ");
-  Serial.println(transferArm.getXHomeSwitch().read() ? "HIGH" : "LOW");
+  smartLog("Homing X axis...");
+  smartLog("Initial home switch state: " +
+           String(transferArm.getXHomeSwitch().read() ? "HIGH" : "LOW"));
 
   // Check if X home switch is already activated
   transferArm.getXHomeSwitch().update();
   if (transferArm.getXHomeSwitch().read() == HIGH) {
-    Serial.println(
-        "X home switch already triggered. Setting position as home.");
+    smartLog("X home switch already triggered. Setting position as home.");
     transferArm.getXStepper().stop();
     transferArm.getXStepper().setCurrentPosition(X_HOME_POS);
 
     // Move away from the switch a small amount to prevent future issues
-    Serial.println("Moving away from the switch slightly...");
+    smartLog("Moving away from the switch slightly...");
     transferArm.getXStepper().setSpeed(
         X_HOME_SPEED);  // Positive direction (away from home)
 
@@ -103,11 +103,9 @@ void homeXAxis() {
     // Stop and set position to a small positive value
     transferArm.getXStepper().stop();
     transferArm.getXStepper().setCurrentPosition(50);  // Small offset from home
-    Serial.print("Backed off from switch by ");
-    Serial.print(safetyCounter);
-    Serial.println(" steps");
+    smartLog("Backed off from switch by " + String(safetyCounter) + " steps");
 
-    Serial.println("X axis homed");
+    smartLog("X axis homed");
     return;
   }
 
@@ -129,7 +127,7 @@ void homeXAxis() {
   transferArm.getXStepper().setCurrentPosition(X_HOME_POS);
 
   // Move away from the switch a small amount
-  Serial.println("Moving away from the switch slightly...");
+  smartLog("Moving away from the switch slightly...");
   transferArm.getXStepper().setSpeed(
       X_HOME_SPEED);  // Positive direction (away from home)
 
@@ -146,9 +144,7 @@ void homeXAxis() {
   // Stop and set position to a small positive value
   transferArm.getXStepper().stop();
   transferArm.getXStepper().setCurrentPosition(50);  // Small offset from home
-  Serial.print("Backed off from switch by ");
-  Serial.print(safetyCounter);
-  Serial.println(" steps");
+  smartLog("Backed off from switch by " + String(safetyCounter) + " steps");
 
-  Serial.println("X axis homed");
+  smartLog("X axis homed");
 }

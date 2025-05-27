@@ -89,7 +89,6 @@ class TransferArmWebServer {
 
   // Movement tracking
   bool isMovementInProgress();
-  void onMovementComplete();
 
  public:
   // Constructor
@@ -109,6 +108,12 @@ class TransferArmWebServer {
   void setServoPosition(int angle);
   void activateVacuum(bool state);
   void forceState(PickCycleState newState);
+
+  void onMovementComplete();
+
+  // Logging methods
+  void sendLogMessage(const String &message);
+  bool hasConnectedClients();
 };
 
 // Global instance declaration
