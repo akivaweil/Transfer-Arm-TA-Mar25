@@ -29,6 +29,7 @@ class TransferArm {
   Bounce zHomeSwitch;
   Bounce startButton;
   Bounce stage1Signal;
+  Bounce transferEnable;
 
   // Private methods
   void initializeHardware();
@@ -53,6 +54,7 @@ class TransferArm {
   Bounce& getZHomeSwitch() { return zHomeSwitch; }
   Bounce& getStartButton() { return startButton; }
   Bounce& getStage1Signal() { return stage1Signal; }
+  Bounce& getTransferEnable() { return transferEnable; }
 
   // Servo position tracking
   int getCurrentServoPosition() { return currentServoPosition; }

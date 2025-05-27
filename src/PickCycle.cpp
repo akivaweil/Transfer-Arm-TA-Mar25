@@ -118,6 +118,10 @@ const char* getStateString(PickCycleState state) {
       return "RETURN_TO_DROPOFF";
     case LOWER_Z_FOR_DROPOFF:
       return "LOWER_Z_FOR_DROPOFF";
+    case WAIT_FOR_TRANSFER_ENABLE:
+      return "WAIT_FOR_TRANSFER_ENABLE";
+    case FINAL_LOWER_Z_FOR_DROPOFF:
+      return "FINAL_LOWER_Z_FOR_DROPOFF";
     case RELEASE_OBJECT:
       return "RELEASE_OBJECT";
     case WAIT_AFTER_RELEASE:
@@ -253,7 +257,6 @@ void updatePickCycle() {
         setCurrentState(RETURN_TO_DROPOFF);
       }
       break;
-
     case RETURN_TO_DROPOFF:
       // Move X axis back to normal dropoff position
       if (moveToPosition(transferArm.getXStepper(), X_DROPOFF_POS)) {
@@ -270,7 +273,41 @@ void updatePickCycle() {
       transferArm.getZStepper().setAcceleration(
           Z_DROPOFF_ACCELERATION);  // Set slower acceleration for dropoff
                                     // movement
-      transferArm.getZStepper().moveTo(Z_DROPOFF_POS);
+
+      if (transferArm.getTransferEnable().read() == HIGH) {
+        // Move to holding position first
+        transferArm.getZStepper().moveTo(Z_DROPOFF_HOLDING_POS);
+        if (transferArm.getZStepper().distanceToGo() == 0) {
+          smartLog(
+              "Z-axis at holding position, waiting for transfer enable to be "
+              "low");
+          setCurrentState(WAIT_FOR_TRANSFER_ENABLE);
+        }
+      } else {
+        // Transfer enable is low, move directly to dropoff position
+        transferArm.getZStepper().moveTo(Z_DROPOFF_POS);
+        if (transferArm.getZStepper().distanceToGo() == 0) {
+          smartLog("Z-axis lowered for dropoff, releasing object");
+          //! Step 10: Release Object
+          setCurrentState(RELEASE_OBJECT);
+        }
+      }
+      break;
+
+    case WAIT_FOR_TRANSFER_ENABLE:
+      // Wait for transfer enable to go low, then continue to final dropoff
+      // position
+      if (transferArm.getTransferEnable().read() == LOW) {
+        smartLog(
+            "Transfer enable is low, continuing to final dropoff position");
+        transferArm.getZStepper().moveTo(Z_DROPOFF_POS);
+        setCurrentState(FINAL_LOWER_Z_FOR_DROPOFF);
+      }
+      // If still high, just continue waiting (non-blocking)
+      break;
+
+    case FINAL_LOWER_Z_FOR_DROPOFF:
+      // Complete the final movement to dropoff position
       if (transferArm.getZStepper().distanceToGo() == 0) {
         smartLog("Z-axis lowered for dropoff, releasing object");
         //! Step 10: Release Object

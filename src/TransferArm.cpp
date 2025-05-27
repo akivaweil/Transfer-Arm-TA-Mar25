@@ -59,6 +59,7 @@ void TransferArm::update() {
   zHomeSwitch.update();
   startButton.update();
   stage1Signal.update();
+  transferEnable.update();
 
   // Handle serial communication
   if (Serial.available()) {
@@ -133,6 +134,9 @@ void TransferArm::configureDebouncers() {
 
   stage1Signal.attach(STAGE1_SIGNAL_PIN);
   stage1Signal.interval(10);  // 10ms debounce
+
+  transferEnable.attach(TRANSFER_ENABLE_PIN);
+  transferEnable.interval(10);  // 10ms debounce
 }
 
 // Configure stepper motor settings
