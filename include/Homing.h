@@ -7,15 +7,15 @@
 //* ************************************************************************
 //* **************************** HOMING LOGIC ******************************
 //* ************************************************************************
-// This file contains the function declarations for the homing sequence of the Transfer Arm.
+// This file contains the function declarations for the homing sequence of the
+// Transfer Arm.
 
-// External Bounce objects for switch debouncing
-extern Bounce xHomeSwitch;
-extern Bounce zHomeSwitch;
+// Forward declaration
+class TransferArm;
 
 // Function declarations
 void homeSystem();
 void homeZAxis();
 void homeXAxis();
 
-#endif // HOMING_H 
+#endif  // HOMING_H
