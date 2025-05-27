@@ -11,13 +11,15 @@ const int START_BUTTON_PIN = 2;    // Start button input (active high)
 const int STAGE1_SIGNAL_PIN = 23;  // Stage 1 machine signal input (active high)
 const int X_HOME_SWITCH_PIN = 15;  // X-axis home limit switch (active high)
 const int Z_HOME_SWITCH_PIN = 13;  // Z-axis home limit switch (active high)
+const int TRANSFER_ENABLE_PIN = 22;  // Transfer arm enable pin (active high)
 
 // Outputs
-const int X_STEP_PIN = 27;          // X-axis stepper motor step pin
-const int X_DIR_PIN = 14;           // X-axis stepper motor direction pin
-const int Z_STEP_PIN = 19;          // Z-axis stepper motor step pin
-const int Z_DIR_PIN = 18;           // Z-axis stepper motor direction pin
-const int SERVO_PIN = 26;           // Servo control pin
+const int X_STEP_PIN = 27;   // X-axis stepper motor step pin
+const int X_DIR_PIN = 14;    // X-axis stepper motor direction pin
+const int X_ENABLE_PIN = 4;  // X-axis stepper motor enable pin (active low)
+const int Z_STEP_PIN = 19;   // Z-axis stepper motor step pin
+const int Z_DIR_PIN = 18;    // Z-axis stepper motor direction pin
+const int SERVO_PIN = 26;    // Servo control pin
 const int SOLENOID_RELAY_PIN = 33;  // Solenoid relay control pin
 const int STAGE2_SIGNAL_PIN =
     25;  // Signal output to Stage 2 machine (active high)
@@ -40,7 +42,7 @@ const int Z_HOME_POS = 0;  // Z-axis home position (in steps)
 const int X_PICKUP_POS_INCHES = 1;      // X-axis pickup position (1 inch)
 const int X_DROPOFF_POS_INCHES = 21.5;  // X-axis dropoff position (20 inches)
 const int X_DROPOFF_OVERSHOOT_INCHES =
-    X_DROPOFF_POS_INCHES + 1.75;  // 3 inches past dropoff for servo rotation
+    X_DROPOFF_POS_INCHES + 2.75;  // 3 inches past dropoff for servo rotation
 const int X_SERVO_ROTATE_INCHES =
     X_DROPOFF_POS_INCHES - 2;  // Start servo rotation 2 inches before dropoff
 const int X_MIDPOINT_INCHES = (X_PICKUP_POS_INCHES + X_DROPOFF_POS_INCHES) /
@@ -70,6 +72,7 @@ const int Z_SUCTION_START_POS =
     Z_SUCTION_START_INCHES * STEPS_PER_INCH;  // Z position to start suction
 const int Z_DROPOFF_POS = Z_DROPOFF_LOWER_INCHES *
                           STEPS_PER_INCH;  // Z-axis down position for dropoff
+const int Z_DROPOFF_HOLDING_POS = 3 * STEPS_PER_INCH;
 
 // Servo angles
 const int SERVO_HOME_POS = 90;    // Servo home position (in degrees)
@@ -89,12 +92,12 @@ const unsigned long SERVO_ROTATION_WAIT_TIME =
           // (500ms)
 
 // Stepper settings
-const int X_MAX_SPEED = 20000;  // Maximum speed for X-axis in steps per second
+const int X_MAX_SPEED = 12000;  // Maximum speed for X-axis in steps per second
 const int X_ACCELERATION =
-    20000;                      // Acceleration for X-axis in steps per second^2
+    15000;                      // Acceleration for X-axis in steps per second^2
 const int Z_MAX_SPEED = 10000;  // Maximum speed for Z-axis in steps per second
 const int Z_ACCELERATION =
-    10000;  // Acceleration for Z-axis in steps per second^2
+    8500;  // Acceleration for Z-axis in steps per second^2
 const int Z_DROPOFF_MAX_SPEED =
     Z_MAX_SPEED / 1;  // Same speed for now for dropoff
 const int Z_DROPOFF_ACCELERATION =
@@ -114,6 +117,8 @@ enum PickCycleState {
   WAIT_FOR_SERVO_ROTATION,
   RETURN_TO_DROPOFF,
   LOWER_Z_FOR_DROPOFF,
+  WAIT_FOR_TRANSFER_ENABLE,
+  FINAL_LOWER_Z_FOR_DROPOFF,
   RELEASE_OBJECT,
   WAIT_AFTER_RELEASE,
   RAISE_Z_AFTER_DROPOFF,

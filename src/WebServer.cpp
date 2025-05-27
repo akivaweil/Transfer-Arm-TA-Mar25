@@ -17,6 +17,7 @@ TransferArmWebServer *webServerInstance = nullptr;
 // Constructor
 TransferArmWebServer::TransferArmWebServer() : server(80), webSocket("/ws") {
   webServerInstance = this;
+  motorsActive = false;  // Initialize motors as inactive
   resetToDefaults();
 }
 
@@ -32,6 +33,9 @@ void TransferArmWebServer::begin() {
 
   // Load configuration from flash
   loadConfig();
+
+  // Apply motor enable state from configuration
+  digitalWrite(X_ENABLE_PIN, config.xMotorEnabled ? LOW : HIGH);
 
   // Setup WiFi - Try to connect to Everwood network first
   if (config.apMode || strlen(config.ssid) == 0) {
@@ -133,28 +137,58 @@ void TransferArmWebServer::begin() {
 
 // Update method - call from main loop
 void TransferArmWebServer::update() {
-  webSocket.cleanupClients();
-
-  // Only broadcast status when no movement is in progress
-  // or every 2 seconds for state updates (but not position data)
-  static unsigned long lastBroadcast = 0;
-  static bool wasMoving = false;
-
-  bool currentlyMoving = isMovementInProgress();
-
-  // If movement just completed, broadcast immediately
-  if (wasMoving && !currentlyMoving) {
-    broadcastStatus();
-    lastBroadcast = millis();
-    onMovementComplete();
-  }
-  // Otherwise, broadcast state (not position) every 2 seconds
-  else if (millis() - lastBroadcast > 2000) {
-    broadcastStatus();
-    lastBroadcast = millis();
+  // Only perform WebSocket operations when motors are NOT active
+  if (!motorsActive) {
+    webSocket.cleanupClients();
   }
 
-  wasMoving = currentlyMoving;
+  // No more time-based polling - all broadcasting is now event-driven
+  // Status updates are triggered by:
+  // 1. State changes in the pick cycle (only when motors inactive)
+  // 2. Movement completion events
+  // 3. Manual control actions (only when motors inactive)
+  // 4. Configuration changes (only when motors inactive)
+}
+
+// Set motor activity state - disables WebSocket when motors are active
+void TransferArmWebServer::setMotorsActive(bool active) {
+  bool wasActive = motorsActive;
+  motorsActive = active;
+
+  if (active && !wasActive) {
+    // Motors starting - disable WebSocket operations
+    Serial.println("Motors active - WebSocket operations disabled");
+
+    // Send final message before disabling WebSocket
+    if (hasConnectedClients()) {
+      JsonDocument doc;
+      doc["type"] = "motorsActive";
+      doc["active"] = true;
+      doc["timestamp"] = millis();
+
+      String message;
+      serializeJson(doc, message);
+      webSocket.textAll(message);
+    }
+  } else if (!active && wasActive) {
+    // Motors stopped - re-enable WebSocket and send status update
+    Serial.println("Motors inactive - WebSocket operations enabled");
+
+    if (hasConnectedClients()) {
+      // Send motor inactive message
+      JsonDocument doc;
+      doc["type"] = "motorsActive";
+      doc["active"] = false;
+      doc["timestamp"] = millis();
+
+      String message;
+      serializeJson(doc, message);
+      webSocket.textAll(message);
+
+      // Send updated status
+      broadcastStatus();
+    }
+  }
 }
 
 // WebSocket event wrapper (static)
@@ -176,9 +210,20 @@ void TransferArmWebServer::onWebSocketEvent(AsyncWebSocket *server,
     case WS_EVT_CONNECT:
       Serial.printf("WebSocket client #%u connected from %s\n", client->id(),
                     client->remoteIP().toString().c_str());
-      // Send initial config and status
-      sendConfigToClient(client->id());
-      broadcastStatus();
+      // Only send initial config and status if motors are not active
+      if (!motorsActive) {
+        sendConfigToClient(client->id());
+        broadcastStatus();
+      } else {
+        // Send a message indicating motors are active
+        JsonDocument doc;
+        doc["type"] = "log";
+        doc["message"] =
+            "Motors are currently active - WebSocket operations disabled";
+        String message;
+        serializeJson(doc, message);
+        webSocket.text(client->id(), message);
+      }
       break;
 
     case WS_EVT_DISCONNECT:
@@ -186,6 +231,17 @@ void TransferArmWebServer::onWebSocketEvent(AsyncWebSocket *server,
       break;
 
     case WS_EVT_DATA: {
+      // Reject all commands if motors are active
+      if (motorsActive) {
+        JsonDocument logDoc;
+        logDoc["type"] = "log";
+        logDoc["message"] = "Command rejected - motors are currently active";
+        String logMessage;
+        serializeJson(logDoc, logMessage);
+        webSocket.text(client->id(), logMessage);
+        return;
+      }
+
       AwsFrameInfo *info = (AwsFrameInfo *)arg;
       if (info->final && info->index == 0 && info->len == len &&
           info->opcode == WS_TEXT) {
@@ -335,6 +391,8 @@ void TransferArmWebServer::handleRoot(AsyncWebServerRequest *request) {
         .btn-danger:hover { background: #dc2626; }
         .btn-success { background: var(--success); }
         .btn-success:hover { background: #059669; }
+        .btn-warning { background: var(--warning); }
+        .btn-warning:hover { background: #d97706; }
         
         .input-group {
             margin-bottom: 1rem;
@@ -563,6 +621,20 @@ void TransferArmWebServer::handleRoot(AsyncWebServerRequest *request) {
                     <input type="number" id="zAcceleration">
                 </div>
                 <button class="btn" onclick="saveSpeeds()">💾 Save Speeds</button>
+                <button class="btn btn-warning" onclick="resetAllSettings()" style="background: var(--warning); margin-top: 0.5rem;">🔄 Reset All to Defaults</button>
+            </div>
+            
+            <!-- Motor Control -->
+            <div class="card">
+                <div class="card-title">🔧 Motor Control</div>
+                <div class="status-item">
+                    <span>X-Axis Motor:</span>
+                    <span id="xMotorStatus">Enabled</span>
+                </div>
+                <button class="btn" id="xMotorToggle" onclick="toggleXMotor()">🔌 Toggle X Motor</button>
+                <div style="margin-top: 1rem; padding: 1rem; background: #fef3c7; border-radius: 0.5rem; border-left: 4px solid var(--warning);">
+                    <strong>⚠️ Warning:</strong> Disabling the X motor will prevent all X-axis movements. Only disable when maintenance is required.
+                </div>
             </div>
             
             <!-- Servo Settings -->
@@ -651,6 +723,26 @@ void TransferArmWebServer::handleRoot(AsyncWebServerRequest *request) {
                 updateConfigUI(data.config);
             } else if (data.type === 'log') {
                 log(data.message);
+            } else if (data.type === 'stateChange') {
+                log(`State changed to: ${data.state}`);
+                // Request a full status update when state changes
+                requestStatus();
+            } else if (data.type === 'vacuumChange') {
+                log(`Vacuum ${data.vacuum ? 'activated' : 'deactivated'}`);
+                document.getElementById('vacuumStatus').textContent = data.vacuum ? 'ON' : 'OFF';
+            } else if (data.type === 'servoChange') {
+                log(`Servo moved to ${data.servoPos}°`);
+                document.getElementById('servoPosition').textContent = data.servoPos + '°';
+            } else if (data.type === 'motorsActive') {
+                if (data.active) {
+                    log('Motors active - WebSocket operations disabled');
+                    showMotorActivityIndicator(true);
+                } else {
+                    log('Motors inactive - WebSocket operations enabled');
+                    showMotorActivityIndicator(false);
+                    // Request status update when motors become inactive
+                    requestStatus();
+                }
             }
         }
         
@@ -702,6 +794,12 @@ void TransferArmWebServer::handleRoot(AsyncWebServerRequest *request) {
             document.getElementById('pickupHoldTime').value = config.pickupHoldTime;
             document.getElementById('dropoffHoldTime').value = config.dropoffHoldTime;
             document.getElementById('servoRotationWait').value = config.servoRotationWaitTime;
+            
+            // Update motor status
+            const xMotorEnabled = config.xMotorEnabled !== undefined ? config.xMotorEnabled : true;
+            document.getElementById('xMotorStatus').textContent = xMotorEnabled ? 'Enabled' : 'Disabled';
+            document.getElementById('xMotorToggle').textContent = xMotorEnabled ? '🔌 Disable X Motor' : '🔌 Enable X Motor';
+            document.getElementById('xMotorToggle').className = xMotorEnabled ? 'btn btn-warning' : 'btn btn-success';
         }
         
         function sendCommand(command, data = {}) {
@@ -800,6 +898,18 @@ void TransferArmWebServer::handleRoot(AsyncWebServerRequest *request) {
             log('Timing settings saved');
         }
         
+        function resetAllSettings() {
+            if (confirm('Are you sure you want to reset ALL settings to factory defaults? This cannot be undone.')) {
+                sendCommand('manualControl', {action: 'resetToDefaults'});
+                log('All settings reset to factory defaults');
+            }
+        }
+        
+        function toggleXMotor() {
+            sendCommand('manualControl', {action: 'toggleXMotor'});
+            log('X-axis motor toggle requested');
+        }
+        
         function log(message) {
             const logContainer = document.getElementById('systemLog');
             const timestamp = new Date().toLocaleTimeString();
@@ -807,9 +917,43 @@ void TransferArmWebServer::handleRoot(AsyncWebServerRequest *request) {
             logContainer.scrollTop = logContainer.scrollHeight;
         }
         
+        function showMotorActivityIndicator(active) {
+            let indicator = document.getElementById('motorActivityIndicator');
+            if (!indicator) {
+                // Create indicator if it doesn't exist
+                indicator = document.createElement('div');
+                indicator.id = 'motorActivityIndicator';
+                indicator.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(239, 68, 68, 0.95);
+                    color: white;
+                    padding: 2rem;
+                    border-radius: 1rem;
+                    font-size: 1.25rem;
+                    font-weight: bold;
+                    text-align: center;
+                    z-index: 10000;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+                    display: none;
+                `;
+                indicator.innerHTML = `
+                    <div>⚡ MOTORS ACTIVE ⚡</div>
+                    <div style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.9;">
+                        WebSocket operations disabled
+                    </div>
+                `;
+                document.body.appendChild(indicator);
+            }
+            
+            indicator.style.display = active ? 'block' : 'none';
+        }
+        
         // Initialize
         connectWebSocket();
-        setInterval(requestStatus, 1000);
+        // No more polling - status updates are now event-driven
     </script>
 </body>
 </html>
@@ -904,6 +1048,10 @@ void TransferArmWebServer::handleSetConfig(JsonDocument &doc) {
     config.zAcceleration = configObj["zAcceleration"];
     transferArm.getZStepper().setAcceleration(config.zAcceleration);
   }
+  if (configObj["xMotorEnabled"].is<bool>()) {
+    config.xMotorEnabled = configObj["xMotorEnabled"];
+    digitalWrite(X_ENABLE_PIN, config.xMotorEnabled ? LOW : HIGH);
+  }
 
   saveConfig();
   sendConfigToClient();
@@ -938,17 +1086,43 @@ void TransferArmWebServer::handleManualControl(JsonDocument &doc) {
   } else if (action == "vacuum") {
     bool state = doc["state"];
     activateVacuum(state);
+    broadcastVacuumChange(state);
   } else if (action == "moveX") {
     float target = doc["target"];
     long steps = target * STEPS_PER_INCH;
+    // Disable WebSocket during manual movement
+    setMotorsActive(true);
     moveToPosition('X', steps);
   } else if (action == "moveZ") {
     float target = doc["target"];
     long steps = target * STEPS_PER_INCH;
+    // Disable WebSocket during manual movement
+    setMotorsActive(true);
     moveToPosition('Z', steps);
   } else if (action == "servo") {
     int angle = doc["angle"];
     setServoPosition(angle);
+    broadcastServoChange(angle);
+  } else if (action == "resetToDefaults") {
+    resetToDefaults();
+    saveConfig();
+    sendConfigToClient();
+
+    // Apply the reset values to the motors immediately
+    transferArm.getXStepper().setMaxSpeed(config.xMaxSpeed);
+    transferArm.getXStepper().setAcceleration(config.xAcceleration);
+    transferArm.getZStepper().setMaxSpeed(config.zMaxSpeed);
+    transferArm.getZStepper().setAcceleration(config.zAcceleration);
+
+    // Send log message
+    JsonDocument logDoc;
+    logDoc["type"] = "log";
+    logDoc["message"] = "All settings reset to factory defaults and applied";
+    String logMessage;
+    serializeJson(logDoc, logMessage);
+    webSocket.textAll(logMessage);
+  } else if (action == "toggleXMotor") {
+    toggleXMotorEnable();
   }
 }
 
@@ -973,7 +1147,57 @@ void TransferArmWebServer::handleEmergencyStop() {
 }
 
 // Utility Methods
-void TransferArmWebServer::broadcastStatus() { handleGetStatus(); }
+void TransferArmWebServer::broadcastStatus() {
+  // Only broadcast if motors are not active
+  if (!motorsActive) {
+    handleGetStatus();
+  }
+}
+
+void TransferArmWebServer::broadcastStateChange(PickCycleState newState) {
+  // Only broadcast if we have connected clients AND motors are not active
+  if (!hasConnectedClients() || motorsActive) return;
+
+  JsonDocument doc;
+  doc["type"] = "stateChange";
+  doc["state"] = getStateString(newState);
+  doc["timestamp"] = millis();
+
+  String message;
+  serializeJson(doc, message);
+  webSocket.textAll(message);
+
+  // Also send a full status update
+  broadcastStatus();
+}
+
+void TransferArmWebServer::broadcastVacuumChange(bool vacuumState) {
+  // Only broadcast if we have connected clients AND motors are not active
+  if (!hasConnectedClients() || motorsActive) return;
+
+  JsonDocument doc;
+  doc["type"] = "vacuumChange";
+  doc["vacuum"] = vacuumState;
+  doc["timestamp"] = millis();
+
+  String message;
+  serializeJson(doc, message);
+  webSocket.textAll(message);
+}
+
+void TransferArmWebServer::broadcastServoChange(int servoPosition) {
+  // Only broadcast if we have connected clients AND motors are not active
+  if (!hasConnectedClients() || motorsActive) return;
+
+  JsonDocument doc;
+  doc["type"] = "servoChange";
+  doc["servoPos"] = servoPosition;
+  doc["timestamp"] = millis();
+
+  String message;
+  serializeJson(doc, message);
+  webSocket.textAll(message);
+}
 
 void TransferArmWebServer::sendConfigToClient(uint32_t clientId) {
   JsonDocument doc;
@@ -1002,6 +1226,7 @@ void TransferArmWebServer::sendConfigToClient(uint32_t clientId) {
   configObj["zDropoffAcceleration"] = config.zDropoffAcceleration;
   configObj["xHomeSpeed"] = config.xHomeSpeed;
   configObj["zHomeSpeed"] = config.zHomeSpeed;
+  configObj["xMotorEnabled"] = config.xMotorEnabled;
 
   String message;
   serializeJson(doc, message);
@@ -1049,6 +1274,7 @@ void TransferArmWebServer::loadConfig() {
       preferences.getInt("zDropoffAccel", Z_DROPOFF_ACCELERATION);
   config.xHomeSpeed = preferences.getInt("xHomeSpeed", X_HOME_SPEED);
   config.zHomeSpeed = preferences.getInt("zHomeSpeed", Z_HOME_SPEED);
+  config.xMotorEnabled = preferences.getBool("xMotorEnabled", true);
 
   preferences.getString("ssid", config.ssid, sizeof(config.ssid));
   preferences.getString("password", config.password, sizeof(config.password));
@@ -1082,6 +1308,7 @@ void TransferArmWebServer::saveConfig() {
   preferences.putInt("zDropoffAccel", config.zDropoffAcceleration);
   preferences.putInt("xHomeSpeed", config.xHomeSpeed);
   preferences.putInt("zHomeSpeed", config.zHomeSpeed);
+  preferences.putBool("xMotorEnabled", config.xMotorEnabled);
 
   preferences.putString("ssid", config.ssid);
   preferences.putString("password", config.password);
@@ -1113,6 +1340,7 @@ void TransferArmWebServer::resetToDefaults() {
   config.zDropoffAcceleration = Z_DROPOFF_ACCELERATION;
   config.xHomeSpeed = X_HOME_SPEED;
   config.zHomeSpeed = Z_HOME_SPEED;
+  config.xMotorEnabled = true;
 
   strcpy(config.ssid, "Everwood");
   strcpy(config.password, "Everwood-Staff");
@@ -1142,6 +1370,26 @@ void TransferArmWebServer::activateVacuum(bool state) {
 
 void TransferArmWebServer::forceState(PickCycleState newState) {
   setCurrentState(newState);
+}
+
+void TransferArmWebServer::toggleXMotorEnable() {
+  config.xMotorEnabled = !config.xMotorEnabled;
+
+  // Apply the enable/disable to the hardware
+  digitalWrite(X_ENABLE_PIN,
+               config.xMotorEnabled ? LOW : HIGH);  // Enable pin is active low
+
+  saveConfig();
+  sendConfigToClient();
+
+  // Send log message
+  JsonDocument logDoc;
+  logDoc["type"] = "log";
+  logDoc["message"] =
+      config.xMotorEnabled ? "X-axis motor enabled" : "X-axis motor disabled";
+  String logMessage;
+  serializeJson(logDoc, logMessage);
+  webSocket.textAll(logMessage);
 }
 
 // Movement tracking methods

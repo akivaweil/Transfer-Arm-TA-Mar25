@@ -9,6 +9,7 @@
 #include "../include/Settings.h"
 #include "../include/TransferArm.h"
 #include "../include/Utils.h"
+#include "../include/WebServer.h"
 
 /*
 Pick and Place Cycle Steps (Values refer to constants in Settings.h):
@@ -53,7 +54,7 @@ bool vacuumActivatedDuringDescent =
 
 // Initialize the pick cycle state machine
 void initializePickCycle() {
-  currentState = WAITING;
+  setCurrentState(WAITING);
   stateTimer = 0;
   midpointServoRotated = false;
   vacuumActivatedDuringDescent = false;
@@ -72,16 +73,24 @@ PickCycleState getCurrentState() { return currentState; }
 
 // Set the current state (for web control)
 void setCurrentState(PickCycleState newState) {
-  currentState = newState;
-  stateTimer = 0;
-  midpointServoRotated = false;
-  vacuumActivatedDuringDescent = false;
+  if (currentState != newState) {
+    currentState = newState;
+    stateTimer = 0;
+    midpointServoRotated = false;
+    vacuumActivatedDuringDescent = false;
+
+    // Broadcast state change to web interface
+    webServer.broadcastStateChange(newState);
+  }
 }
 
 // Trigger pick cycle from web interface
 void triggerPickCycleFromWeb() {
   if (currentState == WAITING) {
-    currentState = MOVE_TO_PICKUP;
+    // Disable WebSocket operations for the entire pick cycle
+    webServer.setMotorsActive(true);
+    enableXMotor();  // Enable X-axis motor for pick cycle
+    setCurrentState(MOVE_TO_PICKUP);
     stateTimer = 0;
   }
 }
@@ -109,6 +118,10 @@ const char* getStateString(PickCycleState state) {
       return "RETURN_TO_DROPOFF";
     case LOWER_Z_FOR_DROPOFF:
       return "LOWER_Z_FOR_DROPOFF";
+    case WAIT_FOR_TRANSFER_ENABLE:
+      return "WAIT_FOR_TRANSFER_ENABLE";
+    case FINAL_LOWER_Z_FOR_DROPOFF:
+      return "FINAL_LOWER_Z_FOR_DROPOFF";
     case RELEASE_OBJECT:
       return "RELEASE_OBJECT";
     case WAIT_AFTER_RELEASE:
@@ -137,8 +150,11 @@ void updatePickCycle() {
       if (transferArm.getStartButton().read() == HIGH ||
           transferArm.getStage1Signal().read() == HIGH) {
         smartLog("Pick Cycle Triggered");
+        // Disable WebSocket operations for the entire pick cycle
+        webServer.setMotorsActive(true);
+        enableXMotor();  // Enable X-axis motor for pick cycle
         //! Step 1: Move to Pickup Position
-        currentState = MOVE_TO_PICKUP;
+        setCurrentState(MOVE_TO_PICKUP);
         stateTimer = 0;
       }
       break;
@@ -163,7 +179,7 @@ void updatePickCycle() {
         transferArm.getZStepper().moveTo(
             Z_PICKUP_POS);  // Command Z to move to final pickup position
         //! Step 2: Lower Z-axis for Pickup & Activate Vacuum
-        currentState = LOWER_Z_FOR_PICKUP;
+        setCurrentState(LOWER_Z_FOR_PICKUP);
       }
       break;
 
@@ -176,6 +192,7 @@ void updatePickCycle() {
           transferArm.getZStepper().currentPosition() >= Z_SUCTION_START_POS) {
         digitalWrite(SOLENOID_RELAY_PIN, HIGH);
         vacuumActivatedDuringDescent = true;
+        webServer.broadcastVacuumChange(true);
         smartLog("Vacuum activated during descent at Z: " +
                  String(transferArm.getZStepper().currentPosition()));
         //! Step 3: Activate Vacuum (during descent)
@@ -185,7 +202,7 @@ void updatePickCycle() {
         smartLog("Z fully lowered for pickup, waiting");
         stateTimer = 0;  // Reset timer for the wait state
         //! Step 4: Wait at Pickup
-        currentState = WAIT_AT_PICKUP;
+        setCurrentState(WAIT_AT_PICKUP);
       }
       break;
 
@@ -194,7 +211,7 @@ void updatePickCycle() {
       if (Wait(PICKUP_HOLD_TIME, &stateTimer)) {
         smartLog("Pickup wait complete, raising Z-axis with object");
         //! Step 5: Raise Z-axis with Object
-        currentState = RAISE_Z_WITH_OBJECT;
+        setCurrentState(RAISE_Z_WITH_OBJECT);
       }
       break;
 
@@ -205,7 +222,7 @@ void updatePickCycle() {
         smartLog("Z-axis raised, rotating servo to travel position");
         midpointServoRotated = false;  // Reset for upcoming sequence
         //! Step 5: Rotate Servo to Travel Position
-        currentState = ROTATE_SERVO_AFTER_PICKUP;
+        setCurrentState(ROTATE_SERVO_AFTER_PICKUP);
       }
       break;
 
@@ -216,7 +233,7 @@ void updatePickCycle() {
       // If servo needs time, a timer or check would be needed here.
       smartLog("Servo rotated to travel position, moving to dropoff overshoot");
       //! Step 6: Move to Dropoff Overshoot Position
-      currentState = MOVE_TO_DROPOFF_OVERSHOOT;
+      setCurrentState(MOVE_TO_DROPOFF_OVERSHOOT);
       break;
 
     case MOVE_TO_DROPOFF_OVERSHOOT:
@@ -228,7 +245,7 @@ void updatePickCycle() {
         transferArm.setServoPosition(SERVO_DROPOFF_POS);
         stateTimer = 0;
         //! Step 7: Wait for Servo Rotation
-        currentState = WAIT_FOR_SERVO_ROTATION;
+        setCurrentState(WAIT_FOR_SERVO_ROTATION);
       }
       break;
 
@@ -237,16 +254,15 @@ void updatePickCycle() {
       if (Wait(SERVO_ROTATION_WAIT_TIME, &stateTimer)) {
         smartLog("Servo rotation complete, returning to dropoff position");
         //! Step 8: Return to Dropoff Position
-        currentState = RETURN_TO_DROPOFF;
+        setCurrentState(RETURN_TO_DROPOFF);
       }
       break;
-
     case RETURN_TO_DROPOFF:
       // Move X axis back to normal dropoff position
       if (moveToPosition(transferArm.getXStepper(), X_DROPOFF_POS)) {
         smartLog("At dropoff X position, lowering Z-axis");
         //! Step 9: Lower Z-axis for Dropoff
-        currentState = LOWER_Z_FOR_DROPOFF;
+        setCurrentState(LOWER_Z_FOR_DROPOFF);
       }
       break;
 
@@ -257,21 +273,56 @@ void updatePickCycle() {
       transferArm.getZStepper().setAcceleration(
           Z_DROPOFF_ACCELERATION);  // Set slower acceleration for dropoff
                                     // movement
-      transferArm.getZStepper().moveTo(Z_DROPOFF_POS);
+
+      if (transferArm.getTransferEnable().read() == HIGH) {
+        // Move to holding position first
+        transferArm.getZStepper().moveTo(Z_DROPOFF_HOLDING_POS);
+        if (transferArm.getZStepper().distanceToGo() == 0) {
+          smartLog(
+              "Z-axis at holding position, waiting for transfer enable to be "
+              "low");
+          setCurrentState(WAIT_FOR_TRANSFER_ENABLE);
+        }
+      } else {
+        // Transfer enable is low, move directly to dropoff position
+        transferArm.getZStepper().moveTo(Z_DROPOFF_POS);
+        if (transferArm.getZStepper().distanceToGo() == 0) {
+          smartLog("Z-axis lowered for dropoff, releasing object");
+          //! Step 10: Release Object
+          setCurrentState(RELEASE_OBJECT);
+        }
+      }
+      break;
+
+    case WAIT_FOR_TRANSFER_ENABLE:
+      // Wait for transfer enable to go low, then continue to final dropoff
+      // position
+      if (transferArm.getTransferEnable().read() == LOW) {
+        smartLog(
+            "Transfer enable is low, continuing to final dropoff position");
+        transferArm.getZStepper().moveTo(Z_DROPOFF_POS);
+        setCurrentState(FINAL_LOWER_Z_FOR_DROPOFF);
+      }
+      // If still high, just continue waiting (non-blocking)
+      break;
+
+    case FINAL_LOWER_Z_FOR_DROPOFF:
+      // Complete the final movement to dropoff position
       if (transferArm.getZStepper().distanceToGo() == 0) {
         smartLog("Z-axis lowered for dropoff, releasing object");
         //! Step 10: Release Object
-        currentState = RELEASE_OBJECT;
+        setCurrentState(RELEASE_OBJECT);
       }
       break;
 
     case RELEASE_OBJECT:
       // Turn off the vacuum solenoid
       digitalWrite(SOLENOID_RELAY_PIN, LOW);
+      webServer.broadcastVacuumChange(false);
       smartLog("Object released, waiting briefly");
       stateTimer = 0;
       //! Step 11: Wait After Release
-      currentState = WAIT_AFTER_RELEASE;
+      setCurrentState(WAIT_AFTER_RELEASE);
       break;
 
     case WAIT_AFTER_RELEASE:
@@ -282,7 +333,7 @@ void updatePickCycle() {
         transferArm.getZStepper().setMaxSpeed(Z_MAX_SPEED);
         transferArm.getZStepper().setAcceleration(Z_ACCELERATION);
         //! Step 12: Raise Z-axis After Dropoff
-        currentState = RAISE_Z_AFTER_DROPOFF;
+        setCurrentState(RAISE_Z_AFTER_DROPOFF);
       }
       break;
 
@@ -292,7 +343,7 @@ void updatePickCycle() {
       if (transferArm.getZStepper().distanceToGo() == 0) {
         smartLog("Z-axis raised, signaling Stage 2");
         //! Step 13: Signal Stage 2
-        currentState = SIGNAL_STAGE2;
+        setCurrentState(SIGNAL_STAGE2);
       }
       break;
 
@@ -303,7 +354,7 @@ void updatePickCycle() {
       digitalWrite(STAGE2_SIGNAL_PIN, LOW);
       smartLog("Stage 2 signaled, returning to pickup position (pre-homing)");
       //! Step 14: Return to Pickup Position (pre-homing)
-      currentState = RETURN_TO_PICKUP;
+      setCurrentState(RETURN_TO_PICKUP);
       break;
 
     case RETURN_TO_PICKUP:  // This state now occurs BEFORE homing
@@ -315,7 +366,7 @@ void updatePickCycle() {
             "Returned to pickup position (pre-homing), initiating X-axis "
             "homing");
         //! Step 15: Home X-axis
-        currentState = HOME_X_AXIS;
+        setCurrentState(HOME_X_AXIS);
       }
       break;
 
@@ -324,17 +375,18 @@ void updatePickCycle() {
       homeXAxis();  // This is a blocking call
       smartLog("X-axis homed, moving to pickup position (post-homing)");
       //! Step 16: Final Move to Pickup Position (post-homing)
-      currentState = FINAL_MOVE_TO_PICKUP;
+      setCurrentState(FINAL_MOVE_TO_PICKUP);
       break;
 
     case FINAL_MOVE_TO_PICKUP:  // New state for post-homing move to pickup
       // Move to pickup position after homing
       if (moveToPosition(transferArm.getXStepper(), X_PICKUP_POS)) {
-        // Servo should already be at SERVO_PICKUP_POS from the RETURN_TO_PICKUP
-        // state before homing
         smartLog("At pickup position (post-homing), cycle complete");
+        disableXMotor();  // Disable X-axis motor after cycle completion
         //! Cycle Complete: Waiting for next trigger
-        currentState = WAITING;
+        setCurrentState(WAITING);
+        // Re-enable WebSocket operations after pick cycle completion
+        webServer.setMotorsActive(false);
       }
       break;
   }

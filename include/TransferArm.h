@@ -7,6 +7,7 @@
 #include <ESP32Servo.h>
 
 #include "Settings.h"
+#include "WebServer.h"
 
 //* ************************************************************************
 //* ************************ TRANSFER ARM CLASS *************************
@@ -28,6 +29,7 @@ class TransferArm {
   Bounce zHomeSwitch;
   Bounce startButton;
   Bounce stage1Signal;
+  Bounce transferEnable;
 
   // Private methods
   void initializeHardware();
@@ -52,12 +54,16 @@ class TransferArm {
   Bounce& getZHomeSwitch() { return zHomeSwitch; }
   Bounce& getStartButton() { return startButton; }
   Bounce& getStage1Signal() { return stage1Signal; }
+  Bounce& getTransferEnable() { return transferEnable; }
 
   // Servo position tracking
   int getCurrentServoPosition() { return currentServoPosition; }
   void setServoPosition(int angle) {
     gripperServo.write(angle);
     currentServoPosition = angle;
+    // Broadcast servo change to web interface
+    extern TransferArmWebServer webServer;
+    webServer.broadcastServoChange(angle);
   }
 
   // Movement status

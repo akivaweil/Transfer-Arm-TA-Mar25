@@ -51,6 +51,9 @@ class TransferArmWebServer {
     int xHomeSpeed;
     int zHomeSpeed;
 
+    // Motor control settings
+    bool xMotorEnabled;
+
     // WiFi settings
     char ssid[32];
     char password[64];
@@ -84,15 +87,19 @@ class TransferArmWebServer {
   void handleEmergencyStop();
 
   // Utility methods
-  void broadcastStatus();
   void sendConfigToClient(uint32_t clientId = 0);
 
   // Movement tracking
   bool isMovementInProgress();
 
+  // Motor movement state tracking for WebSocket control
+  bool motorsActive;
+  bool areMotorsActive() { return motorsActive; }
+
  public:
   // Constructor
   TransferArmWebServer();
+  void setMotorsActive(bool active);
 
   // Main interface methods
   void begin();
@@ -101,6 +108,12 @@ class TransferArmWebServer {
   // Configuration getters (for use by other modules)
   Config &getConfig() { return config; }
 
+  // Event-driven broadcasting methods (called when events occur)
+  void broadcastStateChange(PickCycleState newState);
+  void broadcastVacuumChange(bool vacuumState);
+  void broadcastServoChange(int servoPosition);
+  void broadcastStatus();
+
   // Manual control methods
   void triggerHoming();
   void triggerPickCycle();
@@ -108,6 +121,7 @@ class TransferArmWebServer {
   void setServoPosition(int angle);
   void activateVacuum(bool state);
   void forceState(PickCycleState newState);
+  void toggleXMotorEnable();
 
   void onMovementComplete();
 
