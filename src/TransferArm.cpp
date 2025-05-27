@@ -76,13 +76,22 @@ void TransferArm::update() {
   bool xCurrentlyMoving = xStepper.isRunning();
   bool zCurrentlyMoving = zStepper.isRunning();
 
+  bool anyMotorMoving = xCurrentlyMoving || zCurrentlyMoving;
+  bool wasAnyMotorMoving = xWasMoving || zWasMoving;
+
   // Update steppers
   xStepper.run();
   zStepper.run();
 
-  // Check for movement completion and notify web server
-  if ((xWasMoving && !xCurrentlyMoving) || (zWasMoving && !zCurrentlyMoving)) {
+  // Track motor activity state for WebSocket control
+  if (anyMotorMoving && !wasAnyMotorMoving) {
+    // Motors just started - disable WebSocket
+    webServer.setMotorsActive(true);
+  } else if (!anyMotorMoving && wasAnyMotorMoving) {
+    // Motors just stopped - re-enable WebSocket
+    webServer.setMotorsActive(false);
     webServer.onMovementComplete();
+    webServer.broadcastStatus();  // Broadcast updated positions
   }
 
   xWasMoving = xCurrentlyMoving;
@@ -106,6 +115,9 @@ void TransferArm::configurePins() {
   // Configure output pins
   pinMode(SOLENOID_RELAY_PIN, OUTPUT);
   digitalWrite(SOLENOID_RELAY_PIN, LOW);  // Ensure solenoid is off
+
+  pinMode(X_ENABLE_PIN, OUTPUT);
+  digitalWrite(X_ENABLE_PIN, LOW);  // Enable X motor by default (active low)
 }
 
 // Configure debouncer objects

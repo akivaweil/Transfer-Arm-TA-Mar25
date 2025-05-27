@@ -7,6 +7,7 @@
 #include <ESP32Servo.h>
 
 #include "Settings.h"
+#include "WebServer.h"
 
 //* ************************************************************************
 //* ************************ TRANSFER ARM CLASS *************************
@@ -58,6 +59,9 @@ class TransferArm {
   void setServoPosition(int angle) {
     gripperServo.write(angle);
     currentServoPosition = angle;
+    // Broadcast servo change to web interface
+    extern TransferArmWebServer webServer;
+    webServer.broadcastServoChange(angle);
   }
 
   // Movement status

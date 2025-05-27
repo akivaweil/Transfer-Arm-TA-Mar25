@@ -1,9 +1,9 @@
 #include "../include/Utils.h"
-#include "../include/Settings.h"
 
 #include <AccelStepper.h>
 #include <Arduino.h>
 
+#include "../include/Settings.h"
 #include "../include/WebServer.h"
 
 // Move a stepper to a position and return true when motion is complete
@@ -47,7 +47,7 @@ bool Wait(unsigned long delayTime, unsigned long* startTimePtr) {
   }
 
   return false;
-    // Send to web dashboard if clients are connected
+  // Send to web dashboard if clients are connected
 }
 
 //* ************************************************************************
@@ -58,9 +58,23 @@ bool Wait(unsigned long delayTime, unsigned long* startTimePtr) {
 // Enable X-axis motor (active low enable pin)
 void enableXMotor() {
   digitalWrite(X_ENABLE_PIN, LOW);  // Enable is active low
+  smartLog("X-axis motor enabled");
 }
 
-// Disable X-axis motor (active low enable pin) 
+// Disable X-axis motor (active low enable pin)
 void disableXMotor() {
-  digitalWrite(X_ENABLE_PIN, HIGH); // Disable by setting high
-} 
+  digitalWrite(X_ENABLE_PIN, HIGH);  // Disable by setting high
+  smartLog("X-axis motor disabled");
+}
+
+// Smart logging function - routes to WebSocket if clients connected, otherwise
+// to Serial
+void smartLog(const String& message) {
+  if (webServer.hasConnectedClients()) {
+    // Send to web dashboard if clients are connected
+    webServer.sendLogMessage(message);
+  } else {
+    // Fall back to Serial if no web clients are connected
+    Serial.println(message);
+  }
+}

@@ -4,10 +4,11 @@
 #include <Arduino.h>
 #include <Bounce2.h>
 
-#include "../include/Settings.h"
 #include "../include/Homing.h"
+#include "../include/Settings.h"
 #include "../include/TransferArm.h"
 #include "../include/Utils.h"
+#include "../include/WebServer.h"
 
 //* ************************************************************************
 //* **************************** HOMING LOGIC ******************************
@@ -17,18 +18,20 @@
 
 // Main homing sequence that coordinates all axes according to the specified
 // sequence
-void homeSystem() {
-  smartLog("Starting homing sequence...");
-
 // External references to bounce objects defined in main file
 extern Bounce xHomeSwitch;
 extern Bounce zHomeSwitch;
 
-// Main homing sequence that coordinates all axes according to the specified sequence
+// Main homing sequence that coordinates all axes according to the specified
+// sequence
 void homeSystem() {
   Serial.println("Starting homing sequence...");
+
+  // Disable WebSocket operations during homing
+  webServer.setMotorsActive(true);
+
   enableXMotor();  // Enable X-axis motor for homing
-  
+
   // 1. Home Z axis first
   homeZAxis();
 
@@ -54,8 +57,12 @@ void homeSystem() {
     transferArm.getXStepper().run();
     yield();
   }
-  
+
   disableXMotor();  // Disable X-axis motor after homing
+
+  // Re-enable WebSocket operations after homing
+  webServer.setMotorsActive(false);
+
   smartLog("Homing sequence completed");
 }
 
@@ -85,6 +92,9 @@ void homeZAxis() {
 
 // Home the X axis
 void homeXAxis() {
+  // Disable WebSocket operations during homing
+  webServer.setMotorsActive(true);
+
   enableXMotor();  // Enable X-axis motor for homing
   smartLog("Homing X axis...");
   smartLog("Initial home switch state: " +
@@ -118,6 +128,9 @@ void homeXAxis() {
     smartLog("Backed off from switch by " + String(safetyCounter) + " steps");
 
     smartLog("X axis homed");
+
+    // Re-enable WebSocket operations after homing
+    webServer.setMotorsActive(false);
     return;
   }
 
@@ -159,4 +172,7 @@ void homeXAxis() {
   smartLog("Backed off from switch by " + String(safetyCounter) + " steps");
 
   smartLog("X axis homed");
+
+  // Re-enable WebSocket operations after homing
+  webServer.setMotorsActive(false);
 }
