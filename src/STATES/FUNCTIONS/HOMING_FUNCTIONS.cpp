@@ -1,59 +1,23 @@
-#include "../include/Homing.h"
-
+#include "../../config/Config.h"
+#include "../../config/Pins_Definitions.h"
+#include "../../../include/TransferArm.h"
+#include "../../../include/Utils.h"
 #include <AccelStepper.h>
 #include <Arduino.h>
 #include <Bounce2.h>
 
-#include "../include/Settings.h"
-#include "../include/TransferArm.h"
-#include "../include/Utils.h"
-
 //* ************************************************************************
-//* ************************** HOMING FUNCTIONS ****************************
+//* ************************ HOMING FUNCTIONS ***************************
 //* ************************************************************************
-// This file contains all the functions for the Homing state
-
-// Main homing sequence that coordinates all axes according to the specified
-// sequence
-void homeSystem() {
-  smartLog("Starting homing sequence...");
-
-  // 1. Home Z axis first
-  homeZAxis();
-
-  // 2. Move Z axis up 5 inches
-  smartLog("Moving Z-axis up 5 inches from home...");
-  transferArm.getZStepper().moveTo(Z_UP_POS);
-
-  // Wait for Z movement to complete
-  while (transferArm.getZStepper().distanceToGo() != 0) {
-    transferArm.getZStepper().run();
-    yield();
-  }
-
-  // 3. Home X axis
-  homeXAxis();
-
-  // 4. Move X axis to pickup position
-  smartLog("Moving X-axis to pickup position...");
-  transferArm.getXStepper().moveTo(X_PICKUP_POS);
-
-  // Wait for X movement to complete
-  while (transferArm.getXStepper().distanceToGo() != 0) {
-    transferArm.getXStepper().run();
-    yield();
-  }
-
-  smartLog("Homing sequence completed");
-}
+// This file contains all the individual functions needed for the homing sequence.
+// Each axis has its own dedicated homing function with proper limit switch handling.
 
 // Home the Z axis
 void homeZAxis() {
   smartLog("Homing Z axis...");
 
   // Move towards home switch
-  transferArm.getZStepper().setSpeed(
-      -Z_HOME_SPEED);  // Slow speed in negative direction
+  transferArm.getZStepper().setSpeed(-Z_HOME_SPEED);  // Slow speed in negative direction
 
   // Keep stepping until home switch is triggered (active HIGH)
   while (transferArm.getZHomeSwitch().read() == LOW) {
@@ -71,11 +35,10 @@ void homeZAxis() {
   smartLog("Z axis homed");
 }
 
-// Home the X axis
+// Home the X axis  
 void homeXAxis() {
   smartLog("Homing X axis...");
-  smartLog("Initial home switch state: " +
-           String(transferArm.getXHomeSwitch().read() ? "HIGH" : "LOW"));
+  smartLog("Initial home switch state: " + String(transferArm.getXHomeSwitch().read() ? "HIGH" : "LOW"));
 
   // Check if X home switch is already activated
   transferArm.getXHomeSwitch().update();
@@ -86,22 +49,21 @@ void homeXAxis() {
 
     // Move away from the switch a small amount to prevent future issues
     smartLog("Moving away from the switch slightly...");
-    transferArm.getXStepper().setSpeed(
-        X_HOME_SPEED);  // Positive direction (away from home)
+    transferArm.getXStepper().setSpeed(X_HOME_SPEED);  // Positive direction (away from home)
 
     // Step until switch is released or max steps reached
-    int safetyCounter = 0;
+    float safetyCounter = 0.0;
     transferArm.getXHomeSwitch().update();
-    while (transferArm.getXHomeSwitch().read() == HIGH && safetyCounter < 200) {
+    while (transferArm.getXHomeSwitch().read() == HIGH && safetyCounter < 200.0) {
       transferArm.getXStepper().runSpeed();
       transferArm.getXHomeSwitch().update();
-      safetyCounter++;
+      safetyCounter += 1.0;
       yield();
     }
 
     // Stop and set position to a small positive value
     transferArm.getXStepper().stop();
-    transferArm.getXStepper().setCurrentPosition(50);  // Small offset from home
+    transferArm.getXStepper().setCurrentPosition(50.0);  // Small offset from home
     smartLog("Backed off from switch by " + String(safetyCounter) + " steps");
 
     smartLog("X axis homed");
@@ -109,8 +71,7 @@ void homeXAxis() {
   }
 
   // Move towards home switch
-  transferArm.getXStepper().setSpeed(
-      -X_HOME_SPEED);  // Slow speed in negative direction
+  transferArm.getXStepper().setSpeed(-X_HOME_SPEED);  // Slow speed in negative direction
 
   // Keep stepping until home switch is triggered (active HIGH)
   while (transferArm.getXHomeSwitch().read() == LOW) {
@@ -127,23 +88,22 @@ void homeXAxis() {
 
   // Move away from the switch a small amount
   smartLog("Moving away from the switch slightly...");
-  transferArm.getXStepper().setSpeed(
-      X_HOME_SPEED);  // Positive direction (away from home)
+  transferArm.getXStepper().setSpeed(X_HOME_SPEED);  // Positive direction (away from home)
 
   // Step until switch is released or max steps reached
-  int safetyCounter = 0;
+  float safetyCounter = 0.0;
   transferArm.getXHomeSwitch().update();
-  while (transferArm.getXHomeSwitch().read() == HIGH && safetyCounter < 200) {
+  while (transferArm.getXHomeSwitch().read() == HIGH && safetyCounter < 200.0) {
     transferArm.getXStepper().runSpeed();
     transferArm.getXHomeSwitch().update();
-    safetyCounter++;
+    safetyCounter += 1.0;
     yield();
   }
 
   // Stop and set position to a small positive value
   transferArm.getXStepper().stop();
-  transferArm.getXStepper().setCurrentPosition(50);  // Small offset from home
+  transferArm.getXStepper().setCurrentPosition(50.0);  // Small offset from home
   smartLog("Backed off from switch by " + String(safetyCounter) + " steps");
 
   smartLog("X axis homed");
-} 
+}

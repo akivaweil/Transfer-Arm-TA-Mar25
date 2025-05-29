@@ -1,8 +1,9 @@
 #ifndef HOMING_H
 #define HOMING_H
 
-#include <AccelStepper.h>
-#include <Bounce2.h>
+// Include config files
+#include "../src/config/Config.h"
+#include "../src/config/Pins_Definitions.h"
 
 //* ************************************************************************
 //* **************************** HOMING LOGIC ******************************

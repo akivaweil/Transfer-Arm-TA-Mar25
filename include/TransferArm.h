@@ -2,17 +2,19 @@
 #define TRANSFER_ARM_H
 
 #include <AccelStepper.h>
-#include <Arduino.h>
 #include <Bounce2.h>
 #include <ESP32Servo.h>
 
-#include "Settings.h"
+// Include our config files
+#include "../src/config/Config.h"
+#include "../src/config/Pins_Definitions.h"
 
 //* ************************************************************************
 //* ************************ TRANSFER ARM CLASS *************************
 //* ************************************************************************
-// This class encapsulates all the Transfer Arm functionality including
-// hardware initialization, homing, and the pick-and-place cycle.
+// This class encapsulates all Transfer Arm functionality including
+// hardware initialization, homing, and pick-and-place cycle operations.
+// No webserver functionality - pure hardware control.
 
 class TransferArm {
  private:
@@ -20,8 +22,7 @@ class TransferArm {
   AccelStepper xStepper;
   AccelStepper zStepper;
   Servo gripperServo;
-  int currentServoPosition;  // Track servo position since ESP32Servo doesn't
-                             // have read()
+  float currentServoPosition;  // Track servo position since ESP32Servo doesn't have read()
 
   // Bounce objects for debouncing
   Bounce xHomeSwitch;
@@ -29,12 +30,11 @@ class TransferArm {
   Bounce startButton;
   Bounce stage1Signal;
 
-  // Private methods
-  void initializeHardware();
+  // Private hardware configuration methods
   void configurePins();
+  void configureDebouncers();
   void configureSteppers();
   void configureServo();
-  void configureDebouncers();
 
  public:
   // Constructor
@@ -53,21 +53,16 @@ class TransferArm {
   Bounce& getStartButton() { return startButton; }
   Bounce& getStage1Signal() { return stage1Signal; }
 
-  // Servo position tracking
-  int getCurrentServoPosition() { return currentServoPosition; }
-  void setServoPosition(int angle) {
-    gripperServo.write(angle);
-    currentServoPosition = angle;
-  }
+  // Servo control methods
+  void setServoPosition(float position);
+  float getServoPosition() const { return currentServoPosition; }
 
-  // Movement status
+  // Status methods
   bool isXMoving() { return xStepper.isRunning(); }
   bool isZMoving() { return zStepper.isRunning(); }
-  bool isAnyMotorMoving() {
-    return xStepper.isRunning() || zStepper.isRunning();
-  }
+  bool isAnyMotorMoving() { return xStepper.isRunning() || zStepper.isRunning(); }
 
-  // Serial communication methods
+  // Communication methods
   void handleSerialCommand(const String& command);
   void sendSerialMessage(const String& message);
   void sendBurstRequest();

@@ -1,27 +1,23 @@
-#ifndef PICK_CYCLE_H
-#define PICK_CYCLE_H
+#ifndef PICKCYCLE_H
+#define PICKCYCLE_H
 
-#include <Bounce2.h>
+// Include config files
+#include "../src/config/Config.h"
+#include "../src/config/Pins_Definitions.h"
 
-#include "Settings.h"
+// Forward declarations
+class AccelStepper;
 
-//* ************************************************************************
-//* ************************* PICK CYCLE LOGIC ***************************
-//* ************************************************************************
-// This file contains the function declarations and state definitions for the
-// pick-and-place cycle.
-
-// Forward declaration
-class TransferArm;
-
-// Functions for the pick cycle state machine
+// Function declarations for pick cycle operations
 void initializePickCycle();
 void updatePickCycle();
 PickCycleState getCurrentState();
-
-// Additional functions for web control
 void setCurrentState(PickCycleState newState);
 void triggerPickCycleFromWeb();
 const char* getStateString(PickCycleState state);
 
-#endif  // PICK_CYCLE_H
+// Movement and utility functions
+bool moveToPosition(AccelStepper& stepper, float targetPosition);
+bool Wait(unsigned long duration, unsigned long* timer);
+
+#endif  // PICKCYCLE_H
