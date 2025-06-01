@@ -3,7 +3,7 @@
 
 #include <AccelStepper.h>
 #include <Arduino.h>
-#include "../src/config/Config.h"
+#include "../src/Config/Config.h"
 
 //* ************************************************************************
 //* ************************ UTILITY FUNCTION DECLARATIONS ***************************

@@ -4,8 +4,8 @@
 #include <ESP32Servo.h>
 
 // Include our config files
-#include "config/Config.h"
-#include "config/Pins_Definitions.h"
+#include "Config/Config.h"
+#include "Config/Pins_Definitions.h"
 
 // Include our custom headers
 #include "../include/Homing.h"
@@ -107,6 +107,9 @@ void TransferArm::configurePins() {
   pinMode((int)STAGE1_SIGNAL_PIN, INPUT_PULLDOWN);
 
   // Configure output pins
+  pinMode((int)X_ENABLE_PIN, OUTPUT);
+  digitalWrite((int)X_ENABLE_PIN, HIGH);  // Start with X motor disabled (active low)
+  
   pinMode((int)SOLENOID_RELAY_PIN, OUTPUT);
   digitalWrite((int)SOLENOID_RELAY_PIN, LOW);  // Ensure solenoid is retracted
   
@@ -172,6 +175,22 @@ void TransferArm::setServoPosition(float position) {
   gripperServo.write((int)position);
   currentServoPosition = position;
   smartLog("Servo set to position: " + String(position));
+}
+
+//* ************************************************************************
+//* ************************ MOTOR CONTROL ***************************
+//* ************************************************************************
+
+// Enable X motor (active low enable pin)
+void TransferArm::enableXMotor() {
+  digitalWrite((int)X_ENABLE_PIN, LOW);
+  smartLog("X motor enabled");
+}
+
+// Disable X motor (active low enable pin)
+void TransferArm::disableXMotor() {
+  digitalWrite((int)X_ENABLE_PIN, HIGH);
+  smartLog("X motor disabled");
 }
 
 //* ************************************************************************

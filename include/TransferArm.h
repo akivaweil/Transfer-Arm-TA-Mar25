@@ -6,8 +6,8 @@
 #include <ESP32Servo.h>
 
 // Include our config files
-#include "../src/config/Config.h"
-#include "../src/config/Pins_Definitions.h"
+#include "../src/Config/Config.h"
+#include "../src/Config/Pins_Definitions.h"
 
 //* ************************************************************************
 //* ************************ TRANSFER ARM CLASS *************************
@@ -61,6 +61,10 @@ class TransferArm {
   bool isXMoving() { return xStepper.isRunning(); }
   bool isZMoving() { return zStepper.isRunning(); }
   bool isAnyMotorMoving() { return xStepper.isRunning() || zStepper.isRunning(); }
+
+  // Motor enable/disable methods
+  void enableXMotor();
+  void disableXMotor();
 
   // Communication methods
   void handleSerialCommand(const String& command);

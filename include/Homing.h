@@ -2,8 +2,8 @@
 #define HOMING_H
 
 // Include config files
-#include "../src/config/Config.h"
-#include "../src/config/Pins_Definitions.h"
+#include "../src/Config/Config.h"
+#include "../src/Config/Pins_Definitions.h"
 
 //* ************************************************************************
 //* **************************** HOMING LOGIC ******************************
