@@ -1,5 +1,5 @@
-#include "../../config/Config.h"
-#include "../../config/Pins_Definitions.h"
+#include "../../Config/Config.h"
+#include "../../Config/Pins_Definitions.h"
 #include "../../../include/TransferArm.h"
 #include "../../../include/Utils.h"
 
@@ -17,7 +17,7 @@ void setupZAxisForPickup() {
   transferArm.getZStepper().setMaxSpeed(Z_MAX_SPEED);
   transferArm.getZStepper().setAcceleration(Z_ACCELERATION);
   smartLog("Z-axis configured for pickup operations");
-  delay(250);
+  delay(100);
 }
 
 // Activate vacuum during Z descent when reaching the suction start position

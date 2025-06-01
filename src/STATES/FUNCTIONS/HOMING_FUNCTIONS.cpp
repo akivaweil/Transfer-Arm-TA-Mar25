@@ -1,5 +1,5 @@
-#include "../../config/Config.h"
-#include "../../config/Pins_Definitions.h"
+#include "../../Config/Config.h"
+#include "../../Config/Pins_Definitions.h"
 #include "../../../include/TransferArm.h"
 #include "../../../include/Utils.h"
 #include <AccelStepper.h>

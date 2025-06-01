@@ -1,9 +1,12 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#include "Config/Config.h"
+
+//* ************************************************************************
+//* ************************ CONFIGURATION VALUES ************************
+//* ************************************************************************
 
 // Board identification
-extern const char* BOARD_ID;
-extern const char* BOARD_DESCRIPTION;
+const char* BOARD_ID = "ESP32-S3-TRANSFER-ARM";
+const char* BOARD_DESCRIPTION = "Transfer Arm Control Board";
 
 // Constants
 const float STEPS_PER_REV = 400.0;  // Steps per revolution for steppers (1.8° with 1/2 microstepping)
@@ -18,7 +21,7 @@ const float Z_HOME_POS = 0.0;  // Z-axis home position (in steps)
 
 // X-axis positions in inches from home
 const float X_PICKUP_POS_INCHES = 1.0;      // X-axis pickup position (1 inch)
-const float X_DROPOFF_POS_INCHES = 20.85;    // X-axis dropoff position (20 inches)
+const float X_DROPOFF_POS_INCHES = 20.95;    // X-axis dropoff position (20 inches)
 const float X_DROPOFF_OVERSHOOT_INCHES = X_DROPOFF_POS_INCHES + 1.75;  // 3 inches past dropoff for servo rotation
 const float X_SERVO_ROTATE_INCHES = X_DROPOFF_POS_INCHES - 2.0;  // Start servo rotation 2 inches before dropoff
 const float X_MIDPOINT_INCHES = (X_PICKUP_POS_INCHES + X_DROPOFF_POS_INCHES) / 2.0;  // Midpoint kept for reference
@@ -59,65 +62,4 @@ const float Z_ACCELERATION = 10000.0;   // Acceleration for Z-axis in steps per 
 const float Z_DROPOFF_MAX_SPEED = Z_MAX_SPEED / 1.0;  // Same speed for now for dropoff
 const float Z_DROPOFF_ACCELERATION = Z_ACCELERATION / 1.0;  // Same acceleration for now for dropoff
 const float X_HOME_SPEED = 1000.0;      // Homing speed for X-axis in steps per second
-const float Z_HOME_SPEED = 1000.0;      // Homing speed for Z-axis in steps per second
-
-// State enum for pick cycle
-enum PickCycleState {
-  IDLE,
-  MOVE_TO_PICKUP,
-  LOWER_Z_FOR_PICKUP,
-  WAIT_AT_PICKUP,
-  RAISE_Z_WITH_OBJECT,
-  ROTATE_SERVO_AFTER_PICKUP,
-  MOVE_TO_DROPOFF_OVERSHOOT,
-  WAIT_FOR_SERVO_ROTATION,
-  RETURN_TO_DROPOFF,
-  LOWER_Z_FOR_DROPOFF,
-  RELEASE_OBJECT,
-  WAIT_AFTER_RELEASE,
-  RAISE_Z_AFTER_DROPOFF,
-  SIGNAL_STAGE2,
-  RETURN_TO_PICKUP,
-  HOME_X_AXIS,
-  FINAL_MOVE_TO_PICKUP
-};
-
-// State enums for split pick cycle sequences
-enum IdleState {
-  IDLE_WAIT,
-  TRIGGER_DETECTED
-};
-
-enum PickupSequenceState {
-  PICKUP_MOVE_TO_PICKUP_POS,
-  PICKUP_LOWER_Z_FOR_PICKUP,
-  PICKUP_WAIT_AT_PICKUP_POS,
-  PICKUP_RAISE_Z_WITH_OBJECT,
-  PICKUP_COMPLETE
-};
-
-enum TransportSequenceState {
-  TRANSPORT_ROTATE_SERVO_TO_TRAVEL,
-  TRANSPORT_MOVE_TO_OVERSHOOT,
-  TRANSPORT_WAIT_FOR_SERVO_ROTATION,
-  TRANSPORT_RETURN_TO_DROPOFF_POS,
-  TRANSPORT_COMPLETE
-};
-
-enum DropoffSequenceState {
-  DROPOFF_LOWER_Z_FOR_DROPOFF,
-  DROPOFF_RELEASE_OBJECT_STATE,
-  DROPOFF_WAIT_AFTER_RELEASE,
-  DROPOFF_RAISE_Z_AFTER_DROPOFF,
-  DROPOFF_COMPLETE
-};
-
-enum CompletionSequenceState {
-  COMPLETION_SIGNAL_STAGE2_STATE,
-  COMPLETION_RETURN_TO_PICKUP_PRE_HOME,
-  COMPLETION_HOME_X_AXIS_STATE,
-  COMPLETION_FINAL_MOVE_TO_PICKUP_POS,
-  COMPLETION_COMPLETE
-};
-
-#endif  // CONFIG_H 
+const float Z_HOME_SPEED = 1000.0;      // Homing speed for Z-axis in steps per second 

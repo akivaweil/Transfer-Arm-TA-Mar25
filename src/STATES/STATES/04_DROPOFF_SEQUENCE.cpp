@@ -1,5 +1,5 @@
-#include "../../config/Config.h"
-#include "../../config/Pins_Definitions.h"
+#include "../../Config/Config.h"
+#include "../../Config/Pins_Definitions.h"
 #include "../../../include/TransferArm.h"
 #include "../../../include/Utils.h"
 
@@ -36,6 +36,12 @@ void initializeDropoffSequence() {
 void updateDropoffSequence() {
   switch (currentDropoffState) {
     case DROPOFF_LOWER_Z_FOR_DROPOFF:
+      // Check Stage 2 safety signal before lowering Z axis
+      if (!transferArm.isStage2SafeForZLowering()) {
+        // Wait for Stage 2 to signal it's safe (pin goes low)
+        return;  // Stay in this state until safe
+      }
+      
       // Lower Z axis for dropoff at slower speed
       transferArm.getZStepper().moveTo(Z_DROPOFF_POS);
       if (transferArm.getZStepper().distanceToGo() == 0) {

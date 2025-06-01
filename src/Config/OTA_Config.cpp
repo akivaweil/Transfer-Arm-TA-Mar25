@@ -1,5 +1,4 @@
-#ifndef OTA_CONFIG_H
-#define OTA_CONFIG_H
+#include "OTA_Config.h"
 
 //* ************************************************************************
 //* ************************ OTA CONFIGURATION ***************************
@@ -17,6 +16,4 @@ const float OTA_PORT = 3232.0;
 
 // Connection timeouts
 const unsigned long WIFI_TIMEOUT = 30000;  // 30 seconds
-const unsigned long OTA_TIMEOUT = 10000;   // 10 seconds
-
-#endif  // OTA_CONFIG_H 
+const unsigned long OTA_TIMEOUT = 10000;   // 10 seconds 

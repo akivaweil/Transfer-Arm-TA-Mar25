@@ -1,6 +1,6 @@
 #include "../include/PickCycle.h"
-#include "config/Config.h"
-#include "config/Pins_Definitions.h"
+#include "Config/Config.h"
+#include "Config/Pins_Definitions.h"
 #include "../include/TransferArm.h"
 #include "../include/Utils.h"
 
@@ -48,6 +48,7 @@ MainState currentMainState = MAIN_IDLE;
 void initializePickCycle() {
   currentMainState = MAIN_IDLE;
   initializeIdleState();
+  transferArm.disableXMotor();  // Ensure X motor starts disabled when idle
   smartLog("Pick cycle system initialized");
 }
 
@@ -59,6 +60,7 @@ void updatePickCycle() {
       // Check if idle state triggered a pick cycle
       if (getCurrentIdleState() == TRIGGER_DETECTED) {
         smartLog("Transitioning from idle to pickup sequence");
+        transferArm.enableXMotor();  // Enable X motor for pick cycle
         currentMainState = MAIN_PICKUP_SEQUENCE;
         initializePickupSequence();
       }
@@ -99,6 +101,7 @@ void updatePickCycle() {
       // Check if completion sequence is complete
       if (getCurrentCompletionState() == COMPLETION_COMPLETE) {
         smartLog("Transitioning from completion back to idle");
+        transferArm.disableXMotor();  // Disable X motor when returning to idle
         currentMainState = MAIN_IDLE;
         initializeIdleState();
       }
