@@ -74,6 +74,7 @@ void TransferArm::update() {
   zHomeSwitch.update();
   startButton.update();
   stage1Signal.update();
+  stopSignalStage2.update();
 
   // Handle serial communication
   if (Serial.available()) {
@@ -105,6 +106,7 @@ void TransferArm::configurePins() {
   pinMode((int)Z_HOME_SWITCH_PIN, INPUT_PULLDOWN);
   pinMode((int)START_BUTTON_PIN, INPUT_PULLDOWN);
   pinMode((int)STAGE1_SIGNAL_PIN, INPUT_PULLDOWN);
+  pinMode((int)STOP_SIGNAL_STAGE_2, INPUT_PULLDOWN);
 
   // Configure output pins
   pinMode((int)X_ENABLE_PIN, OUTPUT);
@@ -134,6 +136,9 @@ void TransferArm::configureDebouncers() {
 
   stage1Signal.attach((int)STAGE1_SIGNAL_PIN);
   stage1Signal.interval(10);  // 10ms debounce
+
+  stopSignalStage2.attach((int)STOP_SIGNAL_STAGE_2);
+  stopSignalStage2.interval(10);  // 10ms debounce
   
   smartLog("Debouncers configured successfully");
 }
@@ -191,6 +196,20 @@ void TransferArm::enableXMotor() {
 void TransferArm::disableXMotor() {
   digitalWrite((int)X_ENABLE_PIN, HIGH);
   smartLog("X motor disabled");
+}
+
+//* ************************************************************************
+//* ************************ SAFETY METHODS ***************************
+//* ************************************************************************
+
+// Check if Stage 2 machine signals it's safe for Z-axis lowering
+bool TransferArm::isStage2SafeForZLowering() {
+  // Pin is active high normally, goes low when Stage 2 is safe
+  bool isSafe = (stopSignalStage2.read() == LOW);
+  if (!isSafe) {
+    smartLog("Waiting for Stage 2 safety signal before Z lowering");
+  }
+  return isSafe;
 }
 
 //* ************************************************************************

@@ -29,6 +29,7 @@ class TransferArm {
   Bounce zHomeSwitch;
   Bounce startButton;
   Bounce stage1Signal;
+  Bounce stopSignalStage2;
 
   // Private hardware configuration methods
   void configurePins();
@@ -52,6 +53,7 @@ class TransferArm {
   Bounce& getZHomeSwitch() { return zHomeSwitch; }
   Bounce& getStartButton() { return startButton; }
   Bounce& getStage1Signal() { return stage1Signal; }
+  Bounce& getStopSignalStage2() { return stopSignalStage2; }
 
   // Servo control methods
   void setServoPosition(float position);
@@ -61,6 +63,9 @@ class TransferArm {
   bool isXMoving() { return xStepper.isRunning(); }
   bool isZMoving() { return zStepper.isRunning(); }
   bool isAnyMotorMoving() { return xStepper.isRunning() || zStepper.isRunning(); }
+
+  // Safety methods
+  bool isStage2SafeForZLowering();
 
   // Motor enable/disable methods
   void enableXMotor();

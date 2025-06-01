@@ -59,6 +59,12 @@ void updatePickupSequence() {
       break;
 
     case PICKUP_LOWER_Z_FOR_PICKUP:
+      // Check Stage 2 safety signal before lowering Z axis
+      if (!transferArm.isStage2SafeForZLowering()) {
+        // Wait for Stage 2 to signal it's safe (pin goes low)
+        return;  // Stay in this state until safe
+      }
+      
       // Lower Z axis and activate vacuum mid-way
       activateVacuumDuringDescent();
       
