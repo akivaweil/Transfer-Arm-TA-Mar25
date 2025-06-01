@@ -1,5 +1,8 @@
-#ifndef PINS_DEFINITIONS_H
-#define PINS_DEFINITIONS_H
+#include "Config/Pins_Definitions.h"
+
+//* ************************************************************************
+//* ************************ PIN DEFINITIONS ******************************
+//* ************************************************************************
 
 // Pin Definitions
 // Inputs
@@ -15,6 +18,4 @@ const float Z_STEP_PIN = 19.0;          // Z-axis stepper motor step pin
 const float Z_DIR_PIN = 18.0;           // Z-axis stepper motor direction pin
 const float SERVO_PIN = 26.0;           // Servo control pin
 const float SOLENOID_RELAY_PIN = 33.0;  // Solenoid relay control pin
-const float STAGE2_SIGNAL_PIN = 25.0;   // Signal output to Stage 2 machine (active high)
-
-#endif  // PINS_DEFINITIONS_H 
+const float STAGE2_SIGNAL_PIN = 25.0;   // Signal output to Stage 2 machine (active high) 
