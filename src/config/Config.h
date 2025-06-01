@@ -18,7 +18,7 @@ const float Z_HOME_POS = 0.0;  // Z-axis home position (in steps)
 
 // X-axis positions in inches from home
 const float X_PICKUP_POS_INCHES = 1.0;      // X-axis pickup position (1 inch)
-const float X_DROPOFF_POS_INCHES = 21.5;    // X-axis dropoff position (20 inches)
+const float X_DROPOFF_POS_INCHES = 20.85;    // X-axis dropoff position (20 inches)
 const float X_DROPOFF_OVERSHOOT_INCHES = X_DROPOFF_POS_INCHES + 1.75;  // 3 inches past dropoff for servo rotation
 const float X_SERVO_ROTATE_INCHES = X_DROPOFF_POS_INCHES - 2.0;  // Start servo rotation 2 inches before dropoff
 const float X_MIDPOINT_INCHES = (X_PICKUP_POS_INCHES + X_DROPOFF_POS_INCHES) / 2.0;  // Midpoint kept for reference
